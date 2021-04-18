@@ -31,13 +31,18 @@ int main()
     int view_matrix_location = glGetUniformLocation(basic_blinn_phong.ID, "view");
     int projection_matrix_location = glGetUniformLocation(basic_blinn_phong.ID, "projection");
 
-    glm::vec3 light_position = glm::vec3(0.0f, 500.0f, 0.0f);
-    glm::vec3 light_color = glm::vec3(1.0f, 1.0f, 1.0f);
+    //HARD CODED FOR NOW
+    glm::vec3 light0_position = glm::vec3(-250.0f, 250.0f, 0.0f);
+    glm::vec3 light0_color = glm::vec3(1.0f, 0.0f, 0.0f);
+    glm::vec3 light1_position = glm::vec3(250.0f, 250.0f, 0.0f);
+    glm::vec3 light1_color = glm::vec3(0.0f, 0.0f, 1.0f);
     glm::vec3 object_color = glm::vec3(1.0f, 1.0f, 1.0f);
 
-    int light_position_location = glGetUniformLocation(basic_blinn_phong.ID, "lightPos");
+    int light0_position_location = glGetUniformLocation(basic_blinn_phong.ID, "lightPos0");
+    int light0_color_location = glGetUniformLocation(basic_blinn_phong.ID, "lightColor0");
+    int light1_position_location = glGetUniformLocation(basic_blinn_phong.ID, "lightPos1");
+    int light1_color_location = glGetUniformLocation(basic_blinn_phong.ID, "lightColor1");
     int view_position_location = glGetUniformLocation(basic_blinn_phong.ID, "viewPos");
-    int light_color_location = glGetUniformLocation(basic_blinn_phong.ID, "lightColor");
     int object_color_location = glGetUniformLocation(basic_blinn_phong.ID, "objectColor");
 
     glEnable(GL_DEPTH_TEST);
@@ -65,9 +70,11 @@ int main()
         glUniformMatrix4fv(view_matrix_location, 1, GL_FALSE, glm::value_ptr(view_matrix));
         glUniformMatrix4fv(projection_matrix_location, 1, GL_FALSE, glm::value_ptr(projection_matrix));
 
-        glUniform3fv(light_position_location, 1, glm::value_ptr(light_position));
+        glUniform3fv(light0_position_location, 1, glm::value_ptr(light0_position));
+        glUniform3fv(light0_color_location, 1, glm::value_ptr(light0_color));
+        glUniform3fv(light1_position_location, 1, glm::value_ptr(light1_position));
+        glUniform3fv(light1_color_location, 1, glm::value_ptr(light1_color));
         glUniform3fv(view_position_location, 1, glm::value_ptr(view_position));
-        glUniform3fv(light_color_location, 1, glm::value_ptr(light_color));
         glUniform3fv(object_color_location, 1, glm::value_ptr(object_color));
 
         renderer.render();
