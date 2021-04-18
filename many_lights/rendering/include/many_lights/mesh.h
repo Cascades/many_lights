@@ -24,7 +24,7 @@ namespace ml
     class Mesh {
     public:
         std::vector<ml::Vertex>       vertices;
-        std::vector<unsigned int> indices;
+        std::vector<unsigned int>     indices;
         std::vector<ml::Texture>      textures;
 
         Mesh(std::vector<ml::Vertex> vertices, std::vector<unsigned int> indices, std::vector<ml::Texture> textures);

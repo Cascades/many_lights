@@ -31,8 +31,14 @@ void ml::Model::load_model(std::filesystem::path path)
 {
     Assimp::Importer importer;
     const aiScene* scene = importer.ReadFile(path.generic_string().c_str(), aiProcess_Triangulate |
-                                                            aiProcess_FlipUVs |
-                                                            aiProcess_GenNormals);
+                                                                            aiProcess_FlipUVs |
+                                                                            aiProcess_GenNormals |
+                                                                            aiProcess_JoinIdenticalVertices |
+                                                                            aiProcess_ImproveCacheLocality |
+                                                                            aiProcess_FindDegenerates |
+                                                                            aiProcess_RemoveRedundantMaterials |
+                                                                            aiProcess_OptimizeGraph |
+                                                                            aiProcess_OptimizeMeshes);
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode || !path.has_parent_path())
     {
@@ -124,11 +130,26 @@ std::vector<ml::Texture> ml::Model::load_material_textures(aiMaterial* mat, aiTe
         aiString str;
         mat->GetTexture(type, i, &str);
 
-        ml::Texture texture;
-        texture.id = texture_from_file(std::filesystem::path(str.C_Str()), false);
-        texture.type = typeName;
-        texture.path = std::filesystem::path(str.C_Str());
-        textures.push_back(texture);
+        bool skip = false;
+        for (unsigned int j = 0; j < textures_loaded.size(); j++)
+        {
+            if (textures_loaded[j].path == std::filesystem::path(str.C_Str()))
+            {
+                textures.push_back(textures_loaded[j]);
+                skip = true;
+                break;
+            }
+        }
+        if (!skip)
+        {
+            Texture texture;
+            texture.id = texture_from_file(std::filesystem::path(str.C_Str()), false);
+            texture.type = typeName;
+            texture.path = std::filesystem::path(str.C_Str());
+            textures.push_back(texture);
+            textures_loaded.push_back(texture);
+        }
+
     }
     return textures;
 }

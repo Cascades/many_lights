@@ -40,6 +40,36 @@ void ml::Mesh::setupMesh()
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoords));
 
     glBindVertexArray(0);
+
+    unsigned int diffuse_tex_num = 1;
+    unsigned int specular_tex_num = 1;
+
+    std::vector<std::string> material_uniforms;
+
+    std::cout << "-------------" << std::endl;
+
+    for (unsigned int i = 0; i < textures.size(); i++)
+    {
+        glActiveTexture(GL_TEXTURE0 + i); // activate proper texture unit before binding
+        // retrieve texture number (the N in diffuse_textureN)
+        std::string number;
+        std::string name = textures[i].type;
+        if (name == "texture_diffuse")
+        {
+            number = std::to_string(diffuse_tex_num++);
+        }
+        else if (name == "texture_specular")
+        {
+            number = std::to_string(specular_tex_num++);
+        }
+
+        material_uniforms.push_back(("material." + name + number.c_str()).c_str());
+    }
+
+    for (int z = 0; z < material_uniforms.size(); ++z)
+    {
+        std::cout << material_uniforms[z] << std::endl;
+    }
 }
 
 void ml::Mesh::draw(ml::Shader & shader)
@@ -61,8 +91,6 @@ void ml::Mesh::draw(ml::Shader & shader)
         {
             number = std::to_string(specular_tex_num++);
         }
-
-        std::cout << ("material." + name + number.c_str()).c_str() << std::endl;
 
         glUniform1f(glGetUniformLocation(shader.ID, ("material." + name + number.c_str()).c_str()), i);
         glBindTexture(GL_TEXTURE_2D, textures[i].id);

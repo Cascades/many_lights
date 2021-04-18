@@ -13,6 +13,7 @@ target_link_libraries(many_lights
 	glm::glm
 	assimp::assimp
 	ML::Rendering
+	ML::Camera
 )
 
 install(TARGETS many_lights)

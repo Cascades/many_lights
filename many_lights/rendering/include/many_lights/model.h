@@ -23,6 +23,7 @@ namespace ml
         // model data
         std::vector<ml::Mesh> meshes;
         std::filesystem::path directory;
+        std::vector<ml::Texture> textures_loaded;
 
         void load_model(std::filesystem::path path);
         void process_node(aiNode* node, const aiScene* scene);
