@@ -65,20 +65,21 @@ ml::Shader::Shader(std::filesystem::path const& vert_path, std::filesystem::path
     check_shader_compilation_errors(fragment, GL_FRAGMENT_SHADER);
 
     // shader Program
-    ID = glCreateProgram();
-    glAttachShader(ID, vertex);
-    glAttachShader(ID, fragment);
-    glLinkProgram(ID);
-    check_shader_program_linking_errors(ID);
+    id = std::make_shared<unsigned int>();
+    *id = glCreateProgram();
+    glAttachShader(*id, vertex);
+    glAttachShader(*id, fragment);
+    glLinkProgram(*id);
+    check_shader_program_linking_errors(*id);
 
     // delete the shaders as they're linked into our program now and no longer necessery
     glDeleteShader(vertex);
     glDeleteShader(fragment);
 }
 
-void ml::Shader::use()
+void ml::Shader::use() const
 {
-    glUseProgram(ID);
+    glUseProgram(*id);
 }
 
 void ml::Shader::check_shader_compilation_errors(GLuint shader, GLuint type)

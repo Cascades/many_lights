@@ -4,6 +4,9 @@
 #include <vector>
 #include <iostream>
 
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #include "many_lights/mesh.h"
 
 ml::Mesh::Mesh(std::vector<ml::Vertex> vertices, std::vector<unsigned int> indices, std::vector<ml::Texture> textures) :
@@ -12,6 +15,26 @@ ml::Mesh::Mesh(std::vector<ml::Vertex> vertices, std::vector<unsigned int> indic
     textures(textures)
 {
     setupMesh();
+}
+
+void ml::Mesh::set_shader(ml::Shader& shader)
+{
+    shader = shader;
+    material_uniform_locations.clear();
+    for (auto& uniform_name : material_uniform_names)
+    {
+        material_uniform_locations.emplace_back(glGetUniformLocation(*shader.id, uniform_name.c_str()));
+    }
+}
+
+void ml::Mesh::set_shader(ml::Shader&& shader)
+{
+    shader = std::move(shader);
+    material_uniform_locations.clear();
+    for (auto& uniform_name : material_uniform_names)
+    {
+        material_uniform_locations.emplace_back(glGetUniformLocation(*shader.id, uniform_name.c_str()));
+    }
 }
 
 void ml::Mesh::setupMesh()
@@ -41,10 +64,11 @@ void ml::Mesh::setupMesh()
 
     glBindVertexArray(0);
 
+    unsigned int ambient_tex_num = 1;
     unsigned int diffuse_tex_num = 1;
     unsigned int specular_tex_num = 1;
-
-    std::vector<std::string> material_uniforms;
+    unsigned int bump_tex_num = 1;
+    unsigned int dissolve_tex_num = 1;
 
     std::cout << "-------------" << std::endl;
 
@@ -62,39 +86,45 @@ void ml::Mesh::setupMesh()
         {
             number = std::to_string(specular_tex_num++);
         }
+        else if (name == "texture_ambient")
+        {
+            number = std::to_string(ambient_tex_num++);
+        }
+        else if (name == "texture_bump")
+        {
+            number = std::to_string(bump_tex_num++);
+        }
+        else if (name == "texture_dissolve")
+        {
+            number = std::to_string(dissolve_tex_num++);
+        }
 
-        material_uniforms.push_back(("material." + name + number.c_str()).c_str());
+        material_uniform_names.push_back((name + number.c_str()).c_str());
     }
 
-    for (int z = 0; z < material_uniforms.size(); ++z)
+    for (int z = 0; z < material_uniform_names.size(); ++z)
     {
-        std::cout << material_uniforms[z] << std::endl;
+        std::cout << material_uniform_names[z] << " : " << textures[z].path << " : " << textures[z].id << std::endl;
     }
 }
 
-void ml::Mesh::draw(ml::Shader & shader)
+void ml::Mesh::draw() const
 {
-    unsigned int diffuse_tex_num = 1;
-    unsigned int specular_tex_num = 1;
+    shader.use();
 
     for (unsigned int i = 0; i < textures.size(); i++)
     {
-        glActiveTexture(GL_TEXTURE0 + i); // activate proper texture unit before binding
-        // retrieve texture number (the N in diffuse_textureN)
-        std::string number;
-        std::string name = textures[i].type;
-        if (name == "texture_diffuse")
-        {
-            number = std::to_string(diffuse_tex_num++);
-        }
-        else if (name == "texture_specular")
-        {
-            number = std::to_string(specular_tex_num++);
-        }
-
-        glUniform1f(glGetUniformLocation(shader.ID, ("material." + name + number.c_str()).c_str()), i);
+        glActiveTexture(GL_TEXTURE0 + i);
         glBindTexture(GL_TEXTURE_2D, textures[i].id);
     }
+
+    for (unsigned int i = 0; i < textures.size(); i++)
+    {
+        glUniform1i(glGetUniformLocation(*shader.id, material_uniform_names[i].c_str()), i);
+    }
+
+    glUniform2fv(glGetUniformLocation(*shader.id, "sampler_size"), 1, glm::value_ptr(textures[3].size));
+
     glActiveTexture(GL_TEXTURE0);
 
     // draw mesh

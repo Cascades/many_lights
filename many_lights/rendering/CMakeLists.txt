@@ -2,7 +2,7 @@ add_library(rendering STATIC
 	mesh.cpp
 	shader.cpp
 	renderer.cpp
- "include/many_lights/model.h" "model.cpp")
+ "include/many_lights/model.h" "model.cpp" "buffer.cpp" "include/many_lights/buffer.h")
 
 target_include_directories(rendering PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}/include

@@ -19,16 +19,22 @@ namespace ml
         unsigned int id;
         std::string type;
         std::filesystem::path path;
+        glm::vec2 size;
     };
 
     class Mesh {
     public:
-        std::vector<ml::Vertex>       vertices;
-        std::vector<unsigned int>     indices;
-        std::vector<ml::Texture>      textures;
+        std::vector<ml::Vertex> vertices;
+        std::vector<unsigned int> indices;
+        std::vector<ml::Texture> textures;
+        std::vector<std::string> material_uniform_names;
+        std::vector<GLint> material_uniform_locations;
+        ml::Shader shader;
 
         Mesh(std::vector<ml::Vertex> vertices, std::vector<unsigned int> indices, std::vector<ml::Texture> textures);
-        void draw(ml::Shader& shader);
+        void set_shader(ml::Shader& shader);
+        void set_shader(ml::Shader&& shader);
+        void draw() const;
     private:
         //  render data
         unsigned int VAO, VBO, EBO;

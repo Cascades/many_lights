@@ -16,6 +16,8 @@ namespace ml
 		float last_x = width / 2.0f;
 		float last_y = height / 2.0f;
 
+		bool in_imgui = false;
+
 		std::shared_ptr<ml::Camera> camera;
 
 	public:
@@ -48,6 +50,7 @@ namespace ml
 		static void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 		{
 			Window* win = static_cast<Window*>(glfwGetWindowUserPointer(window));
+			if (win->in_imgui) return;
 			if (win->first_mouse)
 			{
 				win->last_x = xpos;
@@ -67,6 +70,7 @@ namespace ml
 		static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 		{
 			Window* win = static_cast<Window*>(glfwGetWindowUserPointer(window));
+			if (win->in_imgui) return;
 			win->camera->ProcessMouseScroll(yoffset);
 		}
 	};
