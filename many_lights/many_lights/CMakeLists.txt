@@ -18,6 +18,7 @@ target_link_libraries(many_lights
 	ML::BenchMarker
 	ML::Scene
 	ML::Colors
+	ML::UI
 )
 
 target_compile_definitions(many_lights PUBLIC NOMINMAX)

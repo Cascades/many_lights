@@ -25,7 +25,7 @@ layout (std140) uniform Lights {
     Light lights[100];
 };
 
-uniform int num_lights;
+uniform uint num_lights;
 
 void main()
 {

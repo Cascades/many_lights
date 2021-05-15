@@ -16,19 +16,18 @@
 ml::Model::Model(std::filesystem::path path)
 {
     load_model(path);
-    name = path.filename().generic_string();
 }
 
-void ml::Model::draw(ml::Shader& shader) const
+void ml::Model::draw(ml::Shader const & shader) const
 {
     //sort by shader
     for (unsigned int i = 0; i < meshes.size(); i++)
     {
-        meshes[i].draw();
+        meshes[i].draw(shader);
     }
 }
 
-std::vector<ml::Mesh> ml::Model::get_meshes() const
+std::vector<ml::Mesh>& ml::Model::get_meshes()
 {
     return meshes;
 }

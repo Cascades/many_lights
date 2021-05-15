@@ -6,7 +6,7 @@
 
 #include "many_lights/camera.h"
 
-ml::Camera::Camera(glm::vec3 position, glm::vec3 up, float yaw, float pitch) :
+ml::Camera::Camera(glm::vec3 position, glm::vec3 up, float yaw, float pitch, int const & width, int const & height) :
     front(glm::vec3(0.0f, 0.0f, -1.0f)),
     movenent_speed(default_speed),
     mouse_sensitivity(default_sensitivity),
@@ -16,10 +16,11 @@ ml::Camera::Camera(glm::vec3 position, glm::vec3 up, float yaw, float pitch) :
     this->world_up = up;
     this->yaw = yaw;
     this->pitch = pitch;
+    this->set_projection_matrix(45.0f, width, height, 1.0f, 10000.0f);
     updateCameraVectors();
 }
 
-ml::Camera::Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch) :
+ml::Camera::Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch, int const& width, int const& height) :
     front(glm::vec3(0.0f, 0.0f, -1.0f)),
     movenent_speed(default_speed),
     mouse_sensitivity(default_sensitivity),
@@ -29,7 +30,13 @@ ml::Camera::Camera(float posX, float posY, float posZ, float upX, float upY, flo
     this->world_up = glm::vec3(upX, upY, upZ);
     this->yaw = yaw;
     this->pitch = pitch;
+    this->set_projection_matrix(45.0f, width, height, 1.0f, 10000.0f);
     updateCameraVectors();
+}
+
+void ml::Camera::set_projection_matrix(float const & fov, float const & width, float const & height, float const & near_z, float const & far_z)
+{
+    projection_matrix = glm::perspective(glm::radians(fov), width / height, near_z, far_z);
 }
 
 glm::mat4 ml::Camera::GetViewMatrix()

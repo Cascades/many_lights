@@ -1,6 +1,6 @@
 add_library(scene STATIC
 	scene.cpp
- "include/many_lights/scene_lights.h")
+ "include/many_lights/scene_lights.h" "include/many_lights/scene_entities.h")
 
 target_include_directories(scene PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}/include

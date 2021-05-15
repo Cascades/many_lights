@@ -17,25 +17,15 @@ ml::Mesh::Mesh(std::vector<ml::Vertex> vertices, std::vector<unsigned int> indic
     setupMesh();
 }
 
-void ml::Mesh::set_shader(ml::Shader& shader)
+/*void ml::Mesh::set_shader(ml::Shader& s)
 {
-    shader = shader;
-    material_uniform_locations.clear();
-    for (auto& uniform_name : material_uniform_names)
+    shader = s;
+    for (int i = 0; i < material_uniform_names.size(); ++i)
     {
-        material_uniform_locations.emplace_back(glGetUniformLocation(*shader.id, uniform_name.c_str()));
+        material_uniform_locations.emplace_back(glGetUniformLocation(shader.ID, material_uniform_names[i].c_str()));
     }
-}
-
-void ml::Mesh::set_shader(ml::Shader&& shader)
-{
-    shader = std::move(shader);
-    material_uniform_locations.clear();
-    for (auto& uniform_name : material_uniform_names)
-    {
-        material_uniform_locations.emplace_back(glGetUniformLocation(*shader.id, uniform_name.c_str()));
-    }
-}
+    sampler_size_location = glGetUniformLocation(shader.ID, "sampler_size");
+}*/
 
 void ml::Mesh::setupMesh()
 {
@@ -108,7 +98,7 @@ void ml::Mesh::setupMesh()
     }
 }
 
-void ml::Mesh::draw() const
+void ml::Mesh::draw(ml::Shader const & shader) const
 {
     shader.use();
 
@@ -120,10 +110,10 @@ void ml::Mesh::draw() const
 
     for (unsigned int i = 0; i < textures.size(); i++)
     {
-        glUniform1i(glGetUniformLocation(*shader.id, material_uniform_names[i].c_str()), i);
+        glUniform1i(glGetUniformLocation(shader.ID, material_uniform_names[i].c_str()), i);
     }
 
-    glUniform2fv(glGetUniformLocation(*shader.id, "sampler_size"), 1, glm::value_ptr(textures[3].size));
+    glUniform2fv(sampler_size_location, 1, glm::value_ptr(textures[3].size));
 
     glActiveTexture(GL_TEXTURE0);
 

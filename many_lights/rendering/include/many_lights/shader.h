@@ -12,10 +12,10 @@ namespace ml
     public:
         Shader()
         {
-            id = std::make_shared<unsigned int>();
+            ID = UINT_MAX;
         }
 
-        std::shared_ptr<unsigned int> id;
+        unsigned int ID;
 
         void file_to_string(std::filesystem::path const& shader_path, std::string& out_string);
 

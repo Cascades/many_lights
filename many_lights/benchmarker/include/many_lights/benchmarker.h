@@ -8,6 +8,7 @@
 #include <fstream>
 #include <chrono>
 #include <string>
+#include <functional>
 
 namespace ml
 {
@@ -19,8 +20,12 @@ namespace ml
 
         std::vector<uint64_t> results;
 
+
     public:
-        BenchMarker()
+        std::function<void()> begin_if_primed;
+        std::function<void()> end_if_primed;
+    
+        BenchMarker() : begin_if_primed([]() { return; }), end_if_primed([]() { return; })
         {
             glGenQueries(1, &time_query);
         }
@@ -80,11 +85,15 @@ namespace ml
         {
             results.clear();
             benchmarking = true;
+            begin_if_primed = std::bind(&BenchMarker::begin, this);
+            end_if_primed = std::bind(&BenchMarker::end, this);
         }
 
         void diffuse()
         {
             benchmarking = false;
+            begin_if_primed = []() { return; };
+            end_if_primed = []() { return; };
         }
 
         explicit operator bool() const { return benchmarking; }

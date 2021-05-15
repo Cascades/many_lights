@@ -19,6 +19,7 @@ namespace ml
         inline static const float default_sensitivity = 0.1f;
         inline static const float default_zoom = 45.0f;
 
+        glm::mat4 projection_matrix;
         glm::vec3 position;
         glm::vec3 front;
         glm::vec3 up;
@@ -32,9 +33,11 @@ namespace ml
         float mouse_sensitivity;
         float zoom;
 
-        Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = default_yaw, float pitch = defualt_pitch);
+        Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = default_yaw, float pitch = defualt_pitch, int const& width = 800, int const& height = 600);
 
-        Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch);
+        Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch, int const& width, int const& height);
+
+        void set_projection_matrix(float const& fov, float const& width, float const& height, float const& near_z, float const& far_z);
 
         glm::mat4 GetViewMatrix();
 

@@ -18,15 +18,14 @@ namespace ml
     public:
         Model(std::filesystem::path path);
 
-        void draw(ml::Shader& shader) const;
+        void draw(ml::Shader const & shader) const;
 
-        std::vector<ml::Mesh> get_meshes() const;
+        std::vector<ml::Mesh>& get_meshes();
     private:
         // model data
         std::vector<ml::Mesh> meshes;
         std::filesystem::path directory;
         std::vector<ml::Texture> textures_loaded;
-        std::string name;
 
         void load_model(std::filesystem::path path);
         void process_node(aiNode* node, const aiScene* scene);

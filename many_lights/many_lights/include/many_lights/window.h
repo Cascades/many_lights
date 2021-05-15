@@ -1,5 +1,6 @@
 #pragma once
 
+#include "many_lights/scene.h"
 #include "many_lights/camera.h"
 #include <memory>
 
@@ -44,6 +45,7 @@ namespace ml
 			Window* win = static_cast<Window*>(glfwGetWindowUserPointer(window));
 			win->set_width(new_width);
 			win->set_height(new_height);
+			win->camera->set_projection_matrix(45.0f, new_width, new_height, 1.0f, 10000.0f);
 			glViewport(0, 0, new_width, new_height);
 		}
 
