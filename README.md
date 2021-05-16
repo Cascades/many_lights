@@ -50,7 +50,7 @@ public:
 
 The `init` function can be used for any pre-processing that shouldn't be done in the main render loop. `adjust_size` is called whenever there is a resize of the window, so a consumer can update their frame buffers. Finally, `render` is called each frame to perform the render passes.
 
-If we create a class `TestApplication::Deferred` like so:
+For example, if we create a class `TestApplication::Deferred` like so:
 
 ```
 class Deferred final : public ml::ManyLightsAlgorithm
