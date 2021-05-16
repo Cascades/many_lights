@@ -74,7 +74,7 @@ public:
 };
 ```
 
-Then we can encapsulate our rendering algorithm and pass it to `ml::ManyLights` like so:
+Then we can encapsulate our rendering algorithm and pass it to `ml::ManyLights`:
 
 ```
 many_lights->set_algorithm<TestApplication::Deferred>();
