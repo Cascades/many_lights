@@ -23,7 +23,7 @@ Setting the many_lights library up for external consumption is very much planned
 
 ## Example use
 
-The idea behind the library aspect of this repo is to be as quick and easy to use as possible. Because of this, everything revolves around the `ml::ManyLights` class. To create first create a scene (with a GLFW context too) we simply call:
+The idea behind the library aspect of this repo is to be as quick and easy to use as possible. Because of this, everything revolves around the `ml::ManyLights` class. To start, first create a scene (with a GLFW context too) we simply call:
 
 ```
 #include <many_lights/many_lights.h>
@@ -34,7 +34,7 @@ many_lights->set_lights(200, 70, 3.0f);
 ```
 This not only sets up the scene framework, but also adds the Sponza model, as well as 70 lights (the first parameter if max_lights, and the last is the automatically arranged lights' height off the ground).
 
-Next we need to create an algorithm. This is done through the creation of `ml::ManyLightsAlgorithm` derived class. This class looks like:
+Next we need to create an algorithm. This is done through the creation of a `ml::ManyLightsAlgorithm` derived class. This class looks like:
 
 ```
 class ManyLightsAlgorithm
@@ -50,7 +50,7 @@ public:
 
 The `init` function can be used for any pre-processing that shouldn't be done in the main render loop. `adjust_size` is called whenever there is a resize of the window, so a consumer can update their frame buffers. Finally, `render` is called each frame to perform the render passes.
 
-If we create a class `TestApplication::Deferred` like so:
+For example, if we create a class `TestApplication::Deferred` like so:
 
 ```
 class Deferred final : public ml::ManyLightsAlgorithm
@@ -74,7 +74,7 @@ public:
 };
 ```
 
-Then we can encapsulate our rendering algorithm and pass it to `ml::ManyLights` like so:
+Then we can encapsulate our rendering algorithm and pass it to `ml::ManyLights`:
 
 ```
 many_lights->set_algorithm<TestApplication::Deferred>();
