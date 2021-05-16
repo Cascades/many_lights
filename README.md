@@ -34,7 +34,7 @@ many_lights->set_lights(200, 70, 3.0f);
 ```
 This not only sets up the scene framework, but also adds the Sponza model, as well as 70 lights (the first parameter if max_lights, and the last is the automatically arranged lights' height off the ground).
 
-Next we need to create an algorithm. This is done through the creation of `ml::ManyLightsAlgorithm` derived class. This class looks like:
+Next we need to create an algorithm. This is done through the creation of a `ml::ManyLightsAlgorithm` derived class. This class looks like:
 
 ```
 class ManyLightsAlgorithm
