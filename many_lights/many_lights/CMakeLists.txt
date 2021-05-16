@@ -24,4 +24,7 @@ target_compile_definitions(many_lights PUBLIC NOMINMAX)
 
 add_library(ML::ML ALIAS many_lights)
 
-install(TARGETS many_lights)
+set_target_properties(many_lights PROPERTIES PUBLIC_HEADER "include/many_lights/many_lights.h")
+INSTALL(TARGETS many_lights 
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_PREFIX}/include/many_lights
+)

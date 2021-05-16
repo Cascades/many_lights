@@ -21,3 +21,13 @@ target_link_libraries(rendering
 )
 
 add_library(ML::Rendering ALIAS rendering)
+
+#HACK
+
+set_target_properties(rendering PROPERTIES PUBLIC_HEADER "include/many_lights/many_lights_algorithm.h;include/many_lights/shader.h")
+INSTALL(FILES
+	include/many_lights/many_lights_algorithm.h
+	include/many_lights/shader.h
+	DESTINATION
+	${CMAKE_INSTALL_PREFIX}/include/many_lights
+)
