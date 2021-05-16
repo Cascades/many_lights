@@ -23,7 +23,7 @@ Setting the many_lights library up for external consumption is very much planned
 
 ## Example use
 
-The idea behind the library aspect of this repo is to be as quick and easy to use as possible. Because of this, everything revolves around the `ml::ManyLights` class. To create first create a scene (with a GLFW context too) we simply call:
+The idea behind the library aspect of this repo is to be as quick and easy to use as possible. Because of this, everything revolves around the `ml::ManyLights` class. To start, first create a scene (with a GLFW context too) we simply call:
 
 ```
 #include <many_lights/many_lights.h>
