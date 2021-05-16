@@ -1,3 +1,5 @@
+![alt text](https://github.com/Cascades/many_lights/blob/master/header.png?raw=true)
+
 # Rendering Scenes with Many Lights
 
 This project aims to set out a framework for easily testing algorithms that deal with rendering scenes with many lights, as well as some implementations of such algorithms.
