@@ -3,6 +3,7 @@
 #include "many_lights/scene.h"
 #include "many_lights/camera.h"
 #include <memory>
+#include <GLFW/glfw3.h>
 
 namespace ml
 {

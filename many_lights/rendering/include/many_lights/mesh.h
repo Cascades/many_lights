@@ -10,34 +10,31 @@
 namespace ml
 {
     struct Vertex {
-        glm::vec3 Position;
-        glm::vec3 Normal;
-        glm::vec2 TexCoords;
+        glm::vec3 position;
+        glm::vec3 normal;
+        glm::vec2 tex_coords;
     };
 
     struct Texture {
-        unsigned int id;
+        GLuint id;
         std::string type;
         std::filesystem::path path;
         glm::vec2 size;
     };
 
     class Mesh {
+    private:
+        unsigned int VAO, VBO, EBO;
+
+        void setupMesh();
     public:
         std::vector<ml::Vertex> vertices;
         std::vector<unsigned int> indices;
         std::vector<ml::Texture> textures;
         std::vector<std::string> material_uniform_names;
         std::vector<unsigned int> material_uniform_locations;
-        unsigned int sampler_size_location;
 
-        Mesh(std::vector<ml::Vertex> vertices, std::vector<unsigned int> indices, std::vector<ml::Texture> textures);
-        //void set_shader(ml::Shader& s);
+        Mesh(std::vector<ml::Vertex> const & vertices, std::vector<unsigned int> const& indices, std::vector<ml::Texture> const& textures);
         void draw(ml::Shader const& shader) const;
-    private:
-        //  render data
-        unsigned int VAO, VBO, EBO;
-
-        void setupMesh();
     };
 }

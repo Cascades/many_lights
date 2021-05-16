@@ -1,6 +1,7 @@
 #pragma once
 #include <array>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include "many_lights/colors.h"
 #include "many_lights/buffer.h"
 
@@ -19,7 +20,7 @@ namespace ml
         std::vector<Light> lights;
         std::vector<glm::mat4> light_model_matrices;
         std::vector<glm::vec4> light_colors;
-
+    	
         uint32_t num_lights = 70;
         float lights_height = 3.0f;
 
@@ -42,6 +43,9 @@ namespace ml
             }
         }
 
+    public:
+        SceneLights() = default;
+    	
         void initialise()
         {
             lights.assign(max_lights, Light{});
@@ -55,17 +59,14 @@ namespace ml
             ubo_light_block.buffer_sub_data(0, size_bytes(), data());
         }
 
-    public:
-        SceneLights() = delete;
-
-        SceneLights(unsigned int const & max_lights, int const& num_lights, float const& lights_height) :
+        /*SceneLights(unsigned int const & max_lights, int const& num_lights, float const& lights_height) :
             num_lights(num_lights),
             lights_height(lights_height),
             ubo_light_block(),
             max_lights(max_lights)
         {
             initialise();
-        }
+        }*/
 
         size_t size() const noexcept
         {
@@ -85,6 +86,25 @@ namespace ml
         uint32_t const & get_num_lights() const noexcept
         {
             return num_lights;
+        }
+
+    	void set_num_lights(uint32_t const & new_num_lights)
+        {
+            if (new_num_lights > max_lights)
+            {
+                throw std::runtime_error("num_lights > max_lights");
+            }
+            num_lights = new_num_lights;
+        }
+
+        void set_max_lights(uint32_t const& new_max_lights)
+        {
+            max_lights = new_max_lights;
+        }
+
+        void set_light_heights(float const& new_light_heights)
+        {
+            lights_height = new_light_heights;
         }
 
         friend class UI;

@@ -1,13 +1,12 @@
-﻿add_executable (many_lights
-	many_lights.cpp
+﻿add_library(many_lights STATIC
 	window.cpp
- "include/many_lights/lights_algorithm.h")
+    many_lights.cpp)
 
 target_include_directories(many_lights PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-target_link_libraries(many_lights
+target_link_libraries(many_lights PUBLIC
 	glfw
 	glad
 	glm::glm
@@ -22,5 +21,7 @@ target_link_libraries(many_lights
 )
 
 target_compile_definitions(many_lights PUBLIC NOMINMAX)
+
+add_library(ML::ML ALIAS many_lights)
 
 install(TARGETS many_lights)

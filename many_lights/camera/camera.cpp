@@ -6,31 +6,35 @@
 
 #include "many_lights/camera.h"
 
-ml::Camera::Camera(glm::vec3 position, glm::vec3 up, float yaw, float pitch, int const & width, int const & height) :
+ml::Camera::Camera() :
+	projection_matrix(glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 1.0f, 10000.0f)),
+	position(glm::vec3(0.0f, 0.0f, 0.0f)),
+    world_up(glm::vec3(0.0f, 1.0f, 0.0f)),
     front(glm::vec3(0.0f, 0.0f, -1.0f)),
-    movenent_speed(default_speed),
-    mouse_sensitivity(default_sensitivity),
-    zoom(default_zoom)
+    up(glm::vec3(0.0f, 1.0f, 0.0f)),
+    right(glm::normalize(glm::cross(front, world_up))),
+    yaw(-90.0f),
+    pitch(0.0f),
+    movenent_speed(200.0f),
+    mouse_sensitivity(0.1f),
+    zoom(45.0f)
 {
-    this->position = position;
-    this->world_up = up;
-    this->yaw = yaw;
-    this->pitch = pitch;
-    this->set_projection_matrix(45.0f, width, height, 1.0f, 10000.0f);
     updateCameraVectors();
 }
 
-ml::Camera::Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch, int const& width, int const& height) :
+ml::Camera::Camera(glm::vec3 position, glm::vec3 up, float yaw, float pitch, int const & width, int const & height) :
+    projection_matrix(glm::perspective(glm::radians(45.0f), static_cast<float>(width) / static_cast<float>(height), 1.0f, 10000.0f)),
+    position(position),
+    world_up(glm::vec3(0.0f, 1.0f, 0.0f)),
     front(glm::vec3(0.0f, 0.0f, -1.0f)),
-    movenent_speed(default_speed),
-    mouse_sensitivity(default_sensitivity),
-    zoom(default_zoom)
+    up(up),
+    right(glm::normalize(glm::cross(front, world_up))),
+    yaw(-90.0f),
+    pitch(0.0f),
+    movenent_speed(200.0f),
+    mouse_sensitivity(0.1f),
+    zoom(45.0f)
 {
-    this->position = glm::vec3(posX, posY, posZ);
-    this->world_up = glm::vec3(upX, upY, upZ);
-    this->yaw = yaw;
-    this->pitch = pitch;
-    this->set_projection_matrix(45.0f, width, height, 1.0f, 10000.0f);
     updateCameraVectors();
 }
 

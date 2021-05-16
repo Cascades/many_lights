@@ -1,15 +1,14 @@
 #pragma once
 
 #include <glad/glad.h>
-#include <glfw/glfw3.h>
 
 namespace ml
 {
-    void intialise_glad()
+	inline void initalise_glad()
     {
-        if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+        if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
         {
-            throw "Failed to initialize GLAD";
+            throw std::runtime_error("Failed to initialize GLAD");
         }
     }
 }

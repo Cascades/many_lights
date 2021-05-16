@@ -7,6 +7,8 @@
 #include <memory>
 #include <iostream>
 
+#include "many_lights/glad.h"
+
 ml::Window::Window(std::shared_ptr<ml::Camera> camera)
 {
     this->camera = camera;
@@ -30,6 +32,8 @@ ml::Window::Window(std::shared_ptr<ml::Camera> camera)
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+    ml::initalise_glad();
 }
 
 void ml::Window::setup_viewport(int new_width, int new_height)
@@ -37,6 +41,7 @@ void ml::Window::setup_viewport(int new_width, int new_height)
     width = new_width;
     height = new_height;
     glViewport(0, 0, width, height);
+    this->camera->set_projection_matrix(45.0f, new_width, new_height, 1.0f, 10000.0f);
 
     glfwSetWindowUserPointer(window, reinterpret_cast<void*>(this));
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);

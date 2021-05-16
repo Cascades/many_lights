@@ -30,7 +30,7 @@ namespace ml
         void load_model(std::filesystem::path path);
         void process_node(aiNode* node, const aiScene* scene);
         Mesh process_mesh(aiMesh* mesh, const aiScene* scene);
-        std::vector<ml::Texture> load_material_textures(aiMaterial* mat, aiTextureType type, std::string typeName);
+        std::vector<ml::Texture> load_material_textures(aiMaterial* mat, aiTextureType type, std::string type_name);
         unsigned int texture_from_file(std::filesystem::path path, bool gamma, glm::vec2& dimensions);
     };
 }

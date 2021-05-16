@@ -1,31 +1,19 @@
 #include <glad/glad.h>
-#include <GLFW/glfw3.h>
 
 #include <vector>
 #include <iostream>
 
-#include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 #include "many_lights/mesh.h"
 
-ml::Mesh::Mesh(std::vector<ml::Vertex> vertices, std::vector<unsigned int> indices, std::vector<ml::Texture> textures) :
+ml::Mesh::Mesh(std::vector<ml::Vertex> const & vertices, std::vector<unsigned int> const& indices, std::vector<ml::Texture> const& textures) :
     vertices(vertices),
     indices(indices),
     textures(textures)
 {
     setupMesh();
 }
-
-/*void ml::Mesh::set_shader(ml::Shader& s)
-{
-    shader = s;
-    for (int i = 0; i < material_uniform_names.size(); ++i)
-    {
-        material_uniform_locations.emplace_back(glGetUniformLocation(shader.ID, material_uniform_names[i].c_str()));
-    }
-    sampler_size_location = glGetUniformLocation(shader.ID, "sampler_size");
-}*/
 
 void ml::Mesh::setupMesh()
 {
@@ -47,10 +35,10 @@ void ml::Mesh::setupMesh()
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
     // vertex normals
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
     // vertex texture coords
     glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoords));
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, tex_coords));
 
     glBindVertexArray(0);
 
@@ -110,10 +98,8 @@ void ml::Mesh::draw(ml::Shader const & shader) const
 
     for (unsigned int i = 0; i < textures.size(); i++)
     {
-        glUniform1i(glGetUniformLocation(shader.ID, material_uniform_names[i].c_str()), i);
+        glUniform1i(glGetUniformLocation(*shader.id, material_uniform_names[i].c_str()), i);
     }
-
-    glUniform2fv(sampler_size_location, 1, glm::value_ptr(textures[3].size));
 
     glActiveTexture(GL_TEXTURE0);
 

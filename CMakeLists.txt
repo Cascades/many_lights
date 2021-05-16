@@ -17,4 +17,5 @@ include(assets.cmake)
 
 # Include sub-projects.
 add_subdirectory(many_lights)
+add_subdirectory(test_application)
 add_subdirectory(third_party)
