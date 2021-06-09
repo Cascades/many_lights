@@ -10,6 +10,8 @@
 #include <iostream>
 
 #include "many_lights/model.h"
+
+#include "assimp/mesh.h"
 #include "many_lights/shader.h"
 #include "many_lights/mesh.h"
 
@@ -77,7 +79,7 @@ ml::Mesh ml::Model::process_mesh(aiMesh* mesh, const aiScene* scene)
 
     for (unsigned int i = 0; i < mesh->mNumVertices; i++)
     {
-        ml::Vertex vertex;
+        ml::Vertex vertex{};
 
         glm::vec3 vector;
         vector.x = mesh->mVertices[i].x;
@@ -133,7 +135,7 @@ ml::Mesh ml::Model::process_mesh(aiMesh* mesh, const aiScene* scene)
         textures.insert(textures.end(), dissolveMaps.begin(), dissolveMaps.end());
     }
 
-    return Mesh(vertices, indices, textures);
+    return Mesh(std::move(vertices), std::move(indices), std::move(textures));
 }
 
 std::vector<ml::Texture> ml::Model::load_material_textures(aiMaterial* mat, aiTextureType type, std::string typeName)
@@ -193,7 +195,7 @@ std::vector<ml::Texture> ml::Model::load_material_textures(aiMaterial* mat, aiTe
     return textures;
 }
 
-unsigned int ml::Model::texture_from_file(std::filesystem::path path, bool gamma, glm::vec2 & dimensions)
+unsigned int ml::Model::texture_from_file(std::filesystem::path const & path, [[maybe_unused]] bool gamma, glm::vec2 & dimensions)
 {
     unsigned int textureID;
     glGenTextures(1, &textureID);
@@ -203,15 +205,23 @@ unsigned int ml::Model::texture_from_file(std::filesystem::path path, bool gamma
     unsigned char* data = stbi_load((directory / path).generic_string().c_str(), &width, &height, &nrComponents, 0);
     if (data)
     {
-        GLenum format;
+        GLenum format{};
         if (nrComponents == 1)
+        {
             format = GL_RED;
+        }
         else if (nrComponents == 2)
+        {
             format = GL_RG;
+        }
         else if (nrComponents == 3)
+        {
             format = GL_RGB;
-        else if (nrComponents == 4)
+        }
+        else
+        {
             format = GL_RGBA;
+        }
 
         glBindTexture(GL_TEXTURE_2D, textureID);
         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
@@ -223,8 +233,8 @@ unsigned int ml::Model::texture_from_file(std::filesystem::path path, bool gamma
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         stbi_image_free(data);
-        dimensions.x = width;
-        dimensions.y = height;
+        dimensions.x = static_cast<float>(width);
+        dimensions.y = static_cast<float>(height);
     }
     else
     {

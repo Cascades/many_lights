@@ -16,9 +16,9 @@ namespace TestApplication
 
 		~ForwardBlinnPhong() override = default;
 
-		void init(int const& width, int const& height) override;
+		void init([[maybe_unused]] int const& width, [[maybe_unused]] int const& height) override;
 
-		void adjust_size(int const& width, int const& height) override;
+		void adjust_size([[maybe_unused]] int const& width, [[maybe_unused]] int const& height) override;
 
 		void render(ml::Scene& scene) override;
 	};

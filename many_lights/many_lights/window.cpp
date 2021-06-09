@@ -41,7 +41,7 @@ void ml::Window::setup_viewport(int new_width, int new_height)
     width = new_width;
     height = new_height;
     glViewport(0, 0, width, height);
-    this->camera->set_projection_matrix(45.0f, new_width, new_height, 1.0f, 10000.0f);
+    this->camera->set_projection_matrix(45.0f, static_cast<float>(new_width), static_cast<float>(new_height), 1.0f, 10000.0f);
 
     glfwSetWindowUserPointer(window, reinterpret_cast<void*>(this));
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);

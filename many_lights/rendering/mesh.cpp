@@ -1,5 +1,6 @@
 #include <glad/glad.h>
 
+#include <utility>
 #include <vector>
 #include <iostream>
 
@@ -7,10 +8,13 @@
 
 #include "many_lights/mesh.h"
 
-ml::Mesh::Mesh(std::vector<ml::Vertex> const & vertices, std::vector<unsigned int> const& indices, std::vector<ml::Texture> const& textures) :
-    vertices(vertices),
-    indices(indices),
-    textures(textures)
+ml::Mesh::Mesh(std::vector<ml::Vertex> vertices, std::vector<unsigned int> indices, std::vector<ml::Texture> textures) :
+    VAO(0),
+    VBO(0),
+    EBO(0),
+	vertices(std::move(vertices)),
+    indices(std::move(indices)),
+    textures(std::move(textures))
 {
     setupMesh();
 }
@@ -77,7 +81,7 @@ void ml::Mesh::setupMesh()
             number = std::to_string(dissolve_tex_num++);
         }
 
-        material_uniform_names.push_back((name + number.c_str()).c_str());
+        material_uniform_names.emplace_back((name + number).c_str());
     }
 
     for (int z = 0; z < material_uniform_names.size(); ++z)
@@ -105,6 +109,6 @@ void ml::Mesh::draw(ml::Shader const & shader) const
 
     // draw mesh
     glBindVertexArray(VAO);
-    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, nullptr);
     glBindVertexArray(0);
 }

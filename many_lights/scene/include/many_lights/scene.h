@@ -1,4 +1,5 @@
 #pragma once 
+#include <utility>
 #include <vector>
 #include <filesystem>
 #include <memory>
@@ -12,13 +13,13 @@ namespace ml
 {
 	struct Scene
 	{
-		Scene(std::shared_ptr<ml::Camera> camera, std::shared_ptr<ml::SceneEntities> models, std::shared_ptr<ml::SceneLights> lights) :
-			camera(camera),
-			models(models),
-			lights(lights)
+		Scene(std::shared_ptr<ml::Camera> camera, std::shared_ptr<ml::SceneEntities> models, std::shared_ptr<ml::SceneLights<200>> lights) :
+			camera(std::move(camera)),
+			models(std::move(models)),
+			lights(std::move(lights))
 		{}
 		std::shared_ptr<ml::Camera> camera;
 		std::shared_ptr<ml::SceneEntities> models;
-		std::shared_ptr<ml::SceneLights> lights;
+		std::shared_ptr<ml::SceneLights<200>> lights;
 	};
 }

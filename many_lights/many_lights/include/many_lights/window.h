@@ -46,7 +46,7 @@ namespace ml
 			Window* win = static_cast<Window*>(glfwGetWindowUserPointer(window));
 			win->set_width(new_width);
 			win->set_height(new_height);
-			win->camera->set_projection_matrix(45.0f, new_width, new_height, 1.0f, 10000.0f);
+			win->camera->set_projection_matrix(45.0f, static_cast<float>(new_width), static_cast<float>(new_height), 1.0f, 10000.0f);
 			glViewport(0, 0, new_width, new_height);
 		}
 
@@ -56,25 +56,25 @@ namespace ml
 			if (win->in_imgui) return;
 			if (win->first_mouse)
 			{
-				win->last_x = xpos;
-				win->last_y = ypos;
+				win->last_x = static_cast<float>(xpos);
+				win->last_y = static_cast<float>(ypos);
 				win->first_mouse = false;
 			}
 
-			float xoffset = xpos - win->last_x;
-			float yoffset = win->last_y - ypos;
+			float xoffset = static_cast<float>(xpos) - win->last_x;
+			float yoffset = win->last_y - static_cast<float>(ypos);
 
-			win->last_x = xpos;
-			win->last_y = ypos;
+			win->last_x = static_cast<float>(xpos);
+			win->last_y = static_cast<float>(ypos);
 
 			win->camera->ProcessMouseMovement(xoffset, yoffset);
 		}
 
-		static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+		static void scroll_callback(GLFWwindow* window, [[maybe_unused]] double xoffset, [[maybe_unused]] double yoffset)
 		{
 			Window* win = static_cast<Window*>(glfwGetWindowUserPointer(window));
 			if (win->in_imgui) return;
-			win->camera->ProcessMouseScroll(yoffset);
+			win->camera->ProcessMouseScroll(static_cast<float>(yoffset));
 		}
 	};
 

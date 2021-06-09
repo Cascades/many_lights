@@ -21,7 +21,8 @@ namespace ml
 
 		~Buffer() 
 		{
-			if (id.use_count() == 1) // talk about thread safety
+			//TODO: Make Thread-safe
+			if (id.use_count() == 1)
 			{
 				glDeleteBuffers(1, id.get());
 			}
@@ -75,25 +76,25 @@ namespace ml
 			glBindBuffer(buffer_type, 0);
 		}
 
-		void buffer_data(GLsizeiptr const& size, GLenum const & usage) 
+		void buffer_data(GLsizeiptr const& data_size, GLenum const & usage)
 		{
 			bind();
-			glNamedBufferData(*id, size, nullptr, usage);
-			this->size = size;
+			glNamedBufferData(*id, data_size, nullptr, usage);
+			this->size = data_size;
 			unbind();
 		}
 
-		void bind_buffer_range(GLuint const & index, GLintptr const& offset, GLsizeiptr const& size) const
+		void bind_buffer_range(GLuint const & index, GLintptr const& offset, GLsizeiptr const& data_size) const
 			requires(buffer_type == GL_UNIFORM_BUFFER)
 		{
 			bind();
-			glBindBufferRange(buffer_type, index, *id, offset, size);
+			glBindBufferRange(buffer_type, index, *id, offset, data_size);
 			unbind();
 		}
 
-		void buffer_sub_data(GLintptr offset, GLsizeiptr size, const void * data) const
+		void buffer_sub_data(GLintptr offset, GLsizeiptr data_size, const void * data) const
 		{
-			glNamedBufferSubData(*id, offset, size, data);
+			glNamedBufferSubData(*id, offset, data_size, data);
 		}
 	};
 }

@@ -29,8 +29,8 @@ ml::Camera::Camera(glm::vec3 position, glm::vec3 up, float yaw, float pitch, int
     front(glm::vec3(0.0f, 0.0f, -1.0f)),
     up(up),
     right(glm::normalize(glm::cross(front, world_up))),
-    yaw(-90.0f),
-    pitch(0.0f),
+    yaw(yaw),
+    pitch(pitch),
     movenent_speed(200.0f),
     mouse_sensitivity(0.1f),
     zoom(45.0f)

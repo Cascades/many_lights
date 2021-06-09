@@ -34,7 +34,7 @@ namespace ml
         std::vector<std::string> material_uniform_names;
         std::vector<unsigned int> material_uniform_locations;
 
-        Mesh(std::vector<ml::Vertex> const & vertices, std::vector<unsigned int> const& indices, std::vector<ml::Texture> const& textures);
+        Mesh(std::vector<ml::Vertex> vertices, std::vector<unsigned int> indices, std::vector<ml::Texture> textures);
         void draw(ml::Shader const& shader) const;
     };
 }

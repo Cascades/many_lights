@@ -66,7 +66,7 @@ void TestApplication::Deferred::init(int const& width, int const& height)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, g_ambient, 0);
 
-	glDrawBuffers(attachments.size(), attachments.data());
+	glDrawBuffers(static_cast<GLsizei>(attachments.size()), attachments.data());
 
 	glBindRenderbuffer(GL_RENDERBUFFER, depth_buffer);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
@@ -106,7 +106,7 @@ void TestApplication::Deferred::adjust_size(int const& width, int const& height)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, g_ambient, 0);
 
-	glDrawBuffers(attachments.size(), attachments.data());
+	glDrawBuffers(static_cast<GLsizei>(attachments.size()), attachments.data());
 
 	glBindRenderbuffer(GL_RENDERBUFFER, depth_buffer);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);

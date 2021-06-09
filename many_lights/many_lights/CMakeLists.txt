@@ -1,6 +1,6 @@
 ﻿add_library(many_lights STATIC
 	window.cpp
-    many_lights.cpp)
+    )
 
 target_include_directories(many_lights PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}/include

@@ -14,7 +14,7 @@ TestApplication::ForwardBlinnPhong::ForwardBlinnPhong(int const& width, int cons
 	ForwardBlinnPhong::init(width, height);
 }
 
-void TestApplication::ForwardBlinnPhong::init(int const& width, int const& height)
+void TestApplication::ForwardBlinnPhong::init([[maybe_unused]] int const& width, [[maybe_unused]] int const& height)
 {
 	try
 	{
@@ -29,7 +29,7 @@ void TestApplication::ForwardBlinnPhong::init(int const& width, int const& heigh
 	glUniformBlockBinding(*forward_blinn_phong.id, glGetUniformBlockIndex(*forward_blinn_phong.id, "Lights"), 0);
 }
 
-void TestApplication::ForwardBlinnPhong::adjust_size(int const& width, int const& height)
+void TestApplication::ForwardBlinnPhong::adjust_size([[maybe_unused]] int const& width, [[maybe_unused]] int const& height)
 {
 	return;
 }

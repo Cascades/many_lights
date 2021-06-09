@@ -20,7 +20,6 @@ namespace ml
 			// Setup Dear ImGui context
 			IMGUI_CHECKVERSION();
 			ImGui::CreateContext();
-			ImGuiIO& io = ImGui::GetIO();
 			// Setup Platform/Renderer bindings
 			ImGui_ImplGlfw_InitForOpenGL(win.get_window(), true);
 			ImGui_ImplOpenGL3_Init("#version 460");
@@ -28,7 +27,8 @@ namespace ml
 			ImGui::StyleColorsDark();
 		}
 
-		void begin_ui(ml::BenchMarker& bm, ml::SceneLights& lights)
+		template <size_t max_lights>
+		void begin_ui(ml::BenchMarker& bm, ml::SceneLights<max_lights>& lights)
 		{
             ImGui_ImplOpenGL3_NewFrame();
             ImGui_ImplGlfw_NewFrame();
@@ -36,7 +36,8 @@ namespace ml
 
             ImGui::Begin("Demo window");
             int int_num_lights = lights.get_num_lights();
-            if (ImGui::SliderInt("num_lights", &int_num_lights, 0, lights.max_lights))
+			// have to use int for imgui
+            if (ImGui::SliderInt("num_lights", &int_num_lights, 0, static_cast<int>(lights.get_max_lights())))
             {
                 lights.num_lights = int_num_lights;
                 lights.calculate_light_positions();

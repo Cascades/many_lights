@@ -5,9 +5,9 @@
 
 int main()
 {
-    std::unique_ptr<ml::ManyLights> many_lights = std::make_unique<ml::ManyLights>();
+    std::unique_ptr<ml::ManyLights<200>> many_lights = std::make_unique<ml::ManyLights<200>>();
     many_lights->add_model("../assets/sponza/sponza.obj");
-    many_lights->set_lights(200, 70, 3.0f);
+    many_lights->set_lights(70, 3.0f);
 
     many_lights->set_algorithm<TestApplication::Deferred>();
 
