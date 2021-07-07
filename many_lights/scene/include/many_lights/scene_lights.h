@@ -35,6 +35,15 @@ namespace ml
                 float max_rows = static_cast<float>((num_lights / 10) - 1);
                 float curr_row = static_cast<float>((light_index / 10));
                 float z_pos = static_cast<float>(-((70 * max_rows) / 2) + (curr_row * 70) - 37);
+
+                // root bounding box calculation
+                x_bounds[1] = glm::max(x_pos, x_bounds[1]);
+                x_bounds[0] = glm::min(x_pos, x_bounds[0]);
+                y_bounds[1] = glm::max(y_pos, y_bounds[1]);
+                y_bounds[0] = glm::min(y_pos, y_bounds[0]);
+                z_bounds[1] = glm::max(z_pos, z_bounds[1]);
+                z_bounds[0] = glm::min(z_pos, z_bounds[0]);
+            	
                 lights[light_index].position = glm::vec4(x_pos, y_pos, z_pos, 1.0);
                 lights[light_index].color = glm::vec4(ml::utils::hsv_to_rgb(glm::vec3(light_index * (1.0f / num_lights), 1.0, 1.0)), 1.0);
                 light_colors[light_index] = glm::vec4(ml::utils::hsv_to_rgb(glm::vec3(light_index * (1.0f / num_lights), 1.0, 1.0)), 1.0);
@@ -44,6 +53,10 @@ namespace ml
         }
 
     public:
+        glm::vec2 x_bounds = glm::vec2(0.0f);
+        glm::vec2 y_bounds = glm::vec2(0.0f);
+        glm::vec2 z_bounds = glm::vec2(0.0f);
+		
         SceneLights() :
 			lights(),
 			light_model_matrices(),

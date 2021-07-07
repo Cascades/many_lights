@@ -26,6 +26,8 @@ namespace ml
 
         Shader(std::filesystem::path const& vert_path, std::filesystem::path const& frag_path);
 
+        Shader(std::filesystem::path const& comp_path);
+
         void use() const;
 
     private:

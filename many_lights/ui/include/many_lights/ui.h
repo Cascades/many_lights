@@ -15,6 +15,8 @@ namespace ml
 		UI() = default;
 		~UI() = default;
 
+        int current_index;
+
 		void init(ml::Window& win)
 		{
 			// Setup Dear ImGui context
@@ -28,7 +30,7 @@ namespace ml
 		}
 
 		template <size_t max_lights>
-		void begin_ui(ml::BenchMarker& bm, ml::SceneLights<max_lights>& lights)
+		void begin_ui(ml::BenchMarker& bm, ml::SceneLights<max_lights>& lights, std::vector<std::shared_ptr<ml::ManyLightsAlgorithm>> const & algorithms)
 		{
             ImGui_ImplOpenGL3_NewFrame();
             ImGui_ImplGlfw_NewFrame();
@@ -55,6 +57,11 @@ namespace ml
                 lights.ubo_light_block.bind();
                 lights.ubo_light_block.buffer_sub_data(0, lights.size_bytes(), lights.data());
                 lights.ubo_light_block.unbind();
+            }
+
+            for (int i = 0; i < algorithms.size(); ++i)
+            {
+                ImGui::RadioButton(algorithms[i]->get_name().c_str(), &current_index, i);
             }
             
             if (bm)

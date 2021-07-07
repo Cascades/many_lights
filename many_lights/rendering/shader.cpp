@@ -27,6 +27,42 @@ void ml::Shader::file_to_string(std::filesystem::path const& shader_path, std::s
     out_string = shader_string_stream.str();
 }
 
+ml::Shader::Shader(std::filesystem::path const& comp_path)
+{
+    std::string comp_code;
+
+    try
+    {
+        file_to_string(comp_path, comp_code);
+    }
+    catch (std::ifstream::failure& e)
+    {
+        std::cout << "Could not read vertex shader:" << std::endl;
+        std::cout << "|_" << e.what() << std::endl;
+        std::cout << "|_" << e.code() << std::endl;
+        throw e;
+    }
+
+    const char* comp_c_string_code = comp_code.c_str();
+
+    // vertex shader
+    GLuint const comp = glCreateShader(GL_COMPUTE_SHADER);
+    glShaderSource(comp, 1, &comp_c_string_code, nullptr);
+    glCompileShader(comp);
+    check_shader_compilation_errors(comp, GL_COMPUTE_SHADER);
+
+    // shader Program
+    id = std::make_shared<GLuint>(glCreateProgram());
+    glAttachShader(*id, comp);
+    glLinkProgram(*id);
+    check_shader_program_linking_errors();
+
+    // delete the shaders as they're linked into our program now and no longer necessary
+    glDeleteShader(comp);
+
+    index_uniforms();
+}
+
 ml::Shader::Shader(std::filesystem::path const& vert_path, std::filesystem::path const& frag_path)
 {
     std::string vert_code, frag_code;
@@ -129,6 +165,7 @@ void ml::Shader::check_shader_compilation_errors(GLuint const & shader, GLuint c
     {
         ml::ShaderCompilationException e(type);
         glGetShaderInfoLog(shader, 1024, nullptr, e.infoLog);
+        std::cout << e.infoLog << std::endl;
         throw e;
     }
 }

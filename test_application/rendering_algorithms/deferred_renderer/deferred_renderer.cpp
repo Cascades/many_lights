@@ -4,7 +4,7 @@
 
 #include "glm/gtc/type_ptr.hpp"
 
-void TestApplication::Deferred::init(int const& width, int const& height)
+void TestApplication::Deferred::init(int const& width, int const& height, ml::Scene const & scene)
 {
 	geometry_pass_shader = std::move(ml::Shader("../assets/shaders/geometry_pass.vert",
 		"../assets/shaders/geometry_pass.frag"));

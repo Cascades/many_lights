@@ -4,17 +4,17 @@
 #include "glm/gtc/type_ptr.hpp"
 
 
-TestApplication::ForwardBlinnPhong::ForwardBlinnPhong()
+TestApplication::ForwardBlinnPhong::ForwardBlinnPhong(ml::Scene const& scene)
 {
-	ForwardBlinnPhong::init(800, 600);
+	ForwardBlinnPhong::init(800, 600, scene);
 }
 
-TestApplication::ForwardBlinnPhong::ForwardBlinnPhong(int const& width, int const& height)
+TestApplication::ForwardBlinnPhong::ForwardBlinnPhong(int const& width, int const& height, ml::Scene const& scene)
 {
-	ForwardBlinnPhong::init(width, height);
+	ForwardBlinnPhong::init(width, height, scene);
 }
 
-void TestApplication::ForwardBlinnPhong::init([[maybe_unused]] int const& width, [[maybe_unused]] int const& height)
+void TestApplication::ForwardBlinnPhong::init(int const& width, int const& height, ml::Scene const& scene)
 {
 	try
 	{

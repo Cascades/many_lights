@@ -2,14 +2,20 @@
 #include <memory>
 
 #include "test_application/deferred_renderer.h"
+#include "test_application/forward_renderer.h"
+#include "test_application/stochastic_lightcuts_renderer.h"
 
 int main()
 {
-    std::unique_ptr<ml::ManyLights<200>> many_lights = std::make_unique<ml::ManyLights<200>>();
+    constexpr size_t max_lights = 200;
+	
+    std::unique_ptr<ml::ManyLights<max_lights>> many_lights = std::make_unique<ml::ManyLights<200>>();
     many_lights->add_model("../assets/sponza/sponza.obj");
     many_lights->set_lights(70, 3.0f);
 
-    many_lights->set_algorithm<TestApplication::Deferred>();
+    many_lights->add_algorithm<TestApplication::StochasticLightcuts<max_lights>>(many_lights->get_scene());
+    many_lights->add_algorithm<TestApplication::Deferred>(many_lights->get_scene());
+    many_lights->add_algorithm<TestApplication::ForwardBlinnPhong>(many_lights->get_scene());
 
     many_lights->run();
 	

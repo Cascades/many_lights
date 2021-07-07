@@ -17,7 +17,7 @@ struct Light
 };
 
 layout (std140) uniform Lights {
-    Light lights[100];
+    Light lights[200];
 };
 
 uniform uint num_lights;

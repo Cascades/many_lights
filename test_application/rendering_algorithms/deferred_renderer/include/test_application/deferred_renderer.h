@@ -20,10 +20,15 @@ namespace TestApplication
 		unsigned int quadVAO;
 		unsigned int quadVBO;
 
-		void init(int const& width, int const& height) override;
+		void init(int const& width, int const& height, ml::Scene const& scene) override;
 
 		void adjust_size(int const& width, int const& height) override;
 
 		void render(ml::Scene& scene) override;
+
+		std::string get_name() const override
+		{
+			return "Deferred";
+		}
 	};
 }
