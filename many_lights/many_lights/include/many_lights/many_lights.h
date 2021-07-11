@@ -4,6 +4,7 @@
 
 #include <memory>
 
+#include "glm/gtc/type_ptr.hpp"
 #include "many_lights/camera.h"
 #include "many_lights/window.h"
 #include "many_lights/renderer.h"
@@ -24,10 +25,10 @@ namespace ml
 
 		std::shared_ptr<ml::SceneEntities> models;
 		std::shared_ptr<ml::SceneLights<max_lights>> lights;
-		std::shared_ptr<ml::Scene> scene;
+		std::shared_ptr<ml::Scene<max_lights>> scene;
 
-        std::vector<std::shared_ptr<ml::ManyLightsAlgorithm>> algorithms;
-        std::shared_ptr<ml::ManyLightsAlgorithm> current_algorithm;
+        std::vector<std::shared_ptr<ml::ManyLightsAlgorithm<max_lights>>> algorithms;
+        std::shared_ptr<ml::ManyLightsAlgorithm<max_lights>> current_algorithm;
 
 		ml::Renderer renderer;
 
@@ -40,19 +41,19 @@ namespace ml
 
 		void set_lights(int const& num_lights, float const& lights_height) const;
 
-		template <class T, class... ArgTypes>
-		void set_algorithm(ArgTypes&&... args, ml::Scene const& scene);
+		//template <class T, class... ArgTypes>
+		//void set_algorithm(ArgTypes&&... args, ml::Scene<max_lights> const& scene);
 
         template <class T, class... ArgTypes>
-        void add_algorithm(ArgTypes&&... args, ml::Scene const& scene);
+        void add_algorithm(ArgTypes&&... args, ml::Scene<max_lights> const& scene);
 
-        ml::Scene const& get_scene();
+        ml::Scene<max_lights> const& get_scene();
 		
 		void run();
 	};
 
     template <size_t max_lights>
-    ml::Scene const& ManyLights<max_lights>::get_scene()
+    ml::Scene<max_lights> const& ManyLights<max_lights>::get_scene()
     {
         return *scene;
     }
@@ -71,7 +72,7 @@ namespace ml
     // set the algorithm to be tested
     template<size_t max_lights>
     template<class T, class ... ArgTypes>
-    void ManyLights<max_lights>::add_algorithm(ArgTypes&&... args, ml::Scene const& scene)
+    void ManyLights<max_lights>::add_algorithm(ArgTypes&&... args, ml::Scene<max_lights> const& scene)
     {
         algorithms.push_back(std::make_shared<T>(args...));
         algorithms.back()->init(window.get_width(), window.get_height(), scene);
@@ -85,7 +86,7 @@ namespace ml
         window(camera),
         models(std::move(std::make_shared<ml::SceneEntities>())),
         lights(std::move(std::make_shared<ml::SceneLights<max_lights>>())),
-        scene(std::move(std::make_shared<ml::Scene>(camera, models, lights))),
+        scene(std::move(std::make_shared<ml::Scene<max_lights>>(camera, models, lights))),
         renderer(std::move(ml::Renderer())),
 		user_interface()
     {
@@ -158,6 +159,22 @@ namespace ml
             bm.begin_if_primed();
         	// render scene using user algorithm
             current_algorithm->render(*scene);
+
+            std::cout << "3" << glGetError() << std::endl;
+            scene->lights->sphereShader.use();
+
+            scene->lights->sphereShader.set_mat_4x4_floatv("model", 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
+            scene->lights->sphereShader.set_mat_4x4_floatv("view", 1, GL_FALSE, glm::value_ptr(scene->camera->GetViewMatrix()));
+            scene->lights->sphereShader.set_mat_4x4_floatv("projection", 1, GL_FALSE, glm::value_ptr(scene->camera->projection_matrix));
+        	
+            std::cout << "2" << glGetError() << std::endl;
+            glBindVertexArray(scene->lights->sphereVAO);
+            //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, scene->lights->sphereEBO);
+            std::cout << "1" << glGetError() << std::endl;
+            glDrawElementsInstanced(GL_TRIANGLES, scene->lights->sphere.get_meshes()[0].indices.size(), GL_UNSIGNED_INT, nullptr, scene->lights->get_num_lights());
+        	
+            glBindVertexArray(0);
+        	
         	// end benchmarking if begun
             bm.end_if_primed();
 

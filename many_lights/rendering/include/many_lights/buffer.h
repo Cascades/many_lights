@@ -85,11 +85,17 @@ namespace ml
 		}
 
 		void bind_buffer_range(GLuint const & index, GLintptr const& offset, GLsizeiptr const& data_size) const
-			requires(buffer_type == GL_UNIFORM_BUFFER)
+			requires(buffer_type == GL_UNIFORM_BUFFER || buffer_type == GL_SHADER_STORAGE_BUFFER)
 		{
 			bind();
 			glBindBufferRange(buffer_type, index, *id, offset, data_size);
 			unbind();
+		}
+
+		void bind_buffer_base(GLuint const& index) const
+			requires(buffer_type == GL_SHADER_STORAGE_BUFFER)
+		{
+			glBindBufferBase(buffer_type, index, *id);
 		}
 
 		void buffer_sub_data(GLintptr offset, GLsizeiptr data_size, const void * data) const

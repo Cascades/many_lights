@@ -11,8 +11,8 @@
 
 namespace TestApplication
 {
-	template <size_t max_lights>
-	class StochasticLightcuts final : public ml::ManyLightsAlgorithm
+	template <size_t max_lights, size_t max_lightcuts_size>
+	class StochasticLightcuts final : public ml::ManyLightsAlgorithm<max_lights>
 	{
 	public:
 		StochasticLightcuts() : perfect_balanced_tree() {}
@@ -24,7 +24,7 @@ namespace TestApplication
 
 		unsigned int g_buffer;
 		unsigned int g_position, g_normal, g_diff_spec, g_ambient;
-		unsigned int SSBO, lightcuts, miscVars;
+		unsigned int SSBO, lightcuts, miscVars, grid_cell_debug;
 		unsigned int depth_buffer;
 		std::vector<unsigned int> attachments = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
 
@@ -32,7 +32,9 @@ namespace TestApplication
 		int width = 800;
 		int height = 600;
 
-		std::array<int, 51 * 38 * 6> lightcuts_array;
+		int32_t lightcuts_size;
+
+		std::array<int, 51 * 38 * max_lightcuts_size> lightcuts_array;
 
 		unsigned int quadVAO;
 		unsigned int quadVBO;
@@ -40,22 +42,28 @@ namespace TestApplication
 		PBT<float, float, max_lights> perfect_balanced_tree;
 		LightCut<float, float, max_lights> light_cut;
 
-		void init(int const& width, int const& height, ml::Scene const & scene) override;
+		void init(int const& width, int const& height, ml::Scene<max_lights> const & scene) override;
 
 		void adjust_size(int const& width, int const& height) override;
 
-		void render(ml::Scene& scene) override;
+		void render(ml::Scene<max_lights>& scene) override;
 
 		std::string get_name() const override
 		{
 			return "Stochastic LightCuts";
 		}
+
+		void ui(bool const& num_lights_changed, bool const& light_heights_changed) override;
 	};
 }
 
-template<size_t max_lights>
-void TestApplication::StochasticLightcuts<max_lights>::init(int const& width, int const& height, ml::Scene const& scene)
+template<size_t max_lights, size_t max_lightcuts_size>
+void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size>::init(int const& width, int const& height, ml::Scene<max_lights> const& scene)
 {
+	lightcuts_size = 6;
+
+	lightcuts_array.fill(-1);
+	
 	this->width = width;
 	this->height = height;
 
@@ -132,7 +140,7 @@ void TestApplication::StochasticLightcuts<max_lights>::init(int const& width, in
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	perfect_balanced_tree.regenerate(*scene.lights);
-	perfect_balanced_tree.print();
+	//perfect_balanced_tree.print();
 
 	glGenBuffers(1, &SSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO);
@@ -143,17 +151,24 @@ void TestApplication::StochasticLightcuts<max_lights>::init(int const& width, in
 
 	glGenBuffers(1, &lightcuts);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, lightcuts);
-	glNamedBufferStorage(lightcuts, sizeof(int) * 51 * 38 * 6, NULL, GL_DYNAMIC_STORAGE_BIT);
+	glNamedBufferStorage(lightcuts, sizeof(int) * 51 * 38 * max_lightcuts_size, NULL, GL_DYNAMIC_STORAGE_BIT);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, lightcuts);
 
-	lightcuts_array.fill(-1);
-
-	glNamedBufferSubData(lightcuts, 0, sizeof(int) * 51 * 38 * 6, lightcuts_array.data());
+	glNamedBufferSubData(lightcuts, 0, sizeof(int) * 51 * 38 * lightcuts_size, lightcuts_array.data());
 
 	glGenBuffers(1, &miscVars);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, miscVars);
-	glNamedBufferStorage(miscVars, sizeof(glm::vec3) + sizeof(int32_t), NULL, GL_DYNAMIC_STORAGE_BIT);
+	glNamedBufferStorage(miscVars, sizeof(glm::vec3) + sizeof(int32_t) + sizeof(int32_t), NULL, GL_DYNAMIC_STORAGE_BIT);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, miscVars);
+
+	glGenBuffers(1, &grid_cell_debug);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, grid_cell_debug);
+
+	std::vector<int32_t> grid_cell_debug_data;
+	grid_cell_debug_data.assign(16 * 16 * (max_lightcuts_size + 3), -1);
+	
+	glNamedBufferStorage(grid_cell_debug, sizeof(int32_t) * 16 * 16 * (max_lightcuts_size + 3), grid_cell_debug_data.data(), GL_DYNAMIC_STORAGE_BIT);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, grid_cell_debug);
 
 	int work_grp_cnt[3];
 
@@ -162,8 +177,36 @@ void TestApplication::StochasticLightcuts<max_lights>::init(int const& width, in
 	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 2, &work_grp_cnt[2]);
 }
 
-template<size_t max_lights>
-void TestApplication::StochasticLightcuts<max_lights>::adjust_size(int const& width, int const& height)
+template<size_t max_lights, size_t max_lightcuts_size>
+void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size>::ui(bool const& num_lights_changed, bool const& light_heights_changed)
+{
+	if(num_lights_changed)
+	{
+		glNamedBufferSubData(SSBO, 0, perfect_balanced_tree.size_bytes(), perfect_balanced_tree.get_data());
+		glNamedBufferSubData(lightcuts, 0, sizeof(int) * 51 * 38 * lightcuts_size, lightcuts_array.data());
+
+		std::vector<int32_t> grid_cell_debug_data;
+		grid_cell_debug_data.assign(16 * 16 * (max_lightcuts_size + 3), -1);
+
+		glNamedBufferStorage(grid_cell_debug, sizeof(int32_t) * 16 * 16 * (max_lightcuts_size + 3), grid_cell_debug_data.data(), GL_DYNAMIC_STORAGE_BIT);
+	}
+	else if(light_heights_changed)
+	{
+		glNamedBufferSubData(SSBO, 0, perfect_balanced_tree.size_bytes(), perfect_balanced_tree.get_data());
+		glNamedBufferSubData(lightcuts, 0, sizeof(int) * 51 * 38 * lightcuts_size, lightcuts_array.data());
+		
+		std::vector<int32_t> grid_cell_debug_data;
+		grid_cell_debug_data.assign(16 * 16 * (max_lightcuts_size + 3), -1);
+
+		glNamedBufferStorage(grid_cell_debug, sizeof(int32_t) * 16 * 16 * (max_lightcuts_size + 3), grid_cell_debug_data.data(), GL_DYNAMIC_STORAGE_BIT);
+		
+	}
+	
+	ImGui::SliderInt("Lightcut Size", &lightcuts_size, 0, max_lightcuts_size);
+}
+
+template<size_t max_lights, size_t max_lightcuts_size>
+void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size>::adjust_size(int const& width, int const& height)
 {
 	this->width = width;
 	this->height = height;
@@ -205,11 +248,11 @@ void TestApplication::StochasticLightcuts<max_lights>::adjust_size(int const& wi
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-template<size_t max_lights>
-void TestApplication::StochasticLightcuts<max_lights>::render(ml::Scene& scene)
+template<size_t max_lights, size_t max_lightcuts_size>
+void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size>::render(ml::Scene<max_lights>& scene)
 {
 	perfect_balanced_tree.regenerate(*scene.lights);
-	perfect_balanced_tree.print();
+	//perfect_balanced_tree.print();
 	glNamedBufferSubData(SSBO, 0, perfect_balanced_tree.size_bytes(), perfect_balanced_tree.get_data());
 	
 	glEnable(GL_DEPTH_TEST);
@@ -239,6 +282,7 @@ void TestApplication::StochasticLightcuts<max_lights>::render(ml::Scene& scene)
 
 	glNamedBufferSubData(miscVars, 0, sizeof(glm::vec3), glm::value_ptr(scene.camera->position));
 	glNamedBufferSubData(miscVars, sizeof(glm::vec3), sizeof(uint32_t), &frame_count);
+	glNamedBufferSubData(miscVars, sizeof(glm::vec3) + sizeof(uint32_t), sizeof(uint32_t), &lightcuts_size);
 	frame_count++;
 
 	glActiveTexture(GL_TEXTURE0);
@@ -259,7 +303,7 @@ void TestApplication::StochasticLightcuts<max_lights>::render(ml::Scene& scene)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	light_pass_shader.use();
 
-	light_pass_shader.set_floatv3("viewPos", 1, glm::value_ptr(scene.camera->position));
+	//light_pass_shader.set_floatv3("viewPos", 1, glm::value_ptr(scene.camera->position));
 
 	light_pass_shader.set_int("g_position", 0);
 	light_pass_shader.set_int("g_normal", 1);

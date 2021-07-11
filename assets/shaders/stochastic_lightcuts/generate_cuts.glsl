@@ -1,7 +1,6 @@
 #version 460
 
-#define MAX_LIGHTS 200
-#define LIGHTCUT_SIZE 6
+#define MAX_LIGHTCUT_SIZE 20
 
 layout(local_size_x = 1, local_size_y = 1) in;
 uniform sampler2D g_position;
@@ -21,27 +20,29 @@ struct PBTNode
 {
 	PBTBoundingBox bb;
     vec4 total_intensity;
+	ivec4 original_index;
 };
 
 layout(binding = 0) buffer InputSSBO {
-	PBTNode pbt[MAX_LIGHTS];
+	PBTNode pbt[];
 } input_ssbo;
 
 layout(binding = 1) buffer OutputSSBO {
-	int lightcuts[51 * 38 * LIGHTCUT_SIZE];
+	int lightcuts[];
 } output_ssbo;
 
 layout(binding = 2) buffer MiscSSBO {
 	vec3 viewPos;
 	int iFrame;
+	int lightcuts_size;
 } misc_vars;
 
 
 struct BinaryHeap
 {
 	int count;
-	float metric[LIGHTCUT_SIZE];
-	int data[LIGHTCUT_SIZE];
+	float metric[MAX_LIGHTCUT_SIZE];
+	int data[MAX_LIGHTCUT_SIZE];
 };
 
 int get_parent_index(int i)
@@ -57,6 +58,12 @@ int get_left_child_index(int i)
 int get_right_child_index(int i)
 {
 	return i * 2 + 2;
+}
+
+bool node_is_leaf(int index)
+{
+	float dead_node_mult = step(0.0000001, input_ssbo.pbt[get_left_child_index(index)].total_intensity.x + input_ssbo.pbt[get_right_child_index(index)].total_intensity.x);
+	return (index >= (input_ssbo.pbt.length() / 2)) && (dead_node_mult == 0.0);
 }
 
 void insert_node(inout BinaryHeap b, int d, float m)
@@ -144,14 +151,30 @@ void delete_root(inout BinaryHeap b)
 	}
 }
 
-float geo_term(in int pbt_light_index, in vec3 shading_pos)
+//taken from DQLin
+float max_dist_along(vec3 shading_pos, vec3 shading_norm, vec3 boundMin, vec3 boundMax)
+{
+	vec3 dir_p = shading_norm * shading_pos;
+	vec3 mx0 = shading_norm * boundMin - dir_p;
+	vec3 mx1 = shading_norm * boundMax - dir_p;
+	return max(mx0[0], mx1[0]) + max(mx0[1], mx1[1]) + max(mx0[2], mx1[2]);
+}
+
+float geo_term(in int pbt_light_index, in vec3 shading_pos, in vec3 shading_normal)
 {
 	// not OG lightcuts
-	vec3 closest_light_pos = clamp(shading_pos, input_ssbo.pbt[pbt_light_index].bb.min_bounds.xyz, input_ssbo.pbt[pbt_light_index].bb.max_bounds.xyz);
+	//vec3 closest_light_pos = clamp(shading_pos, input_ssbo.pbt[pbt_light_index].bb.min_bounds.xyz, input_ssbo.pbt[pbt_light_index].bb.max_bounds.xyz);
 
-	vec3 dist_vec = closest_light_pos - shading_pos;
+	//vec3 dist_vec = closest_light_pos - shading_pos;
 
-	return 1.0 / dot(dist_vec, dist_vec);
+	//return dist_vec;
+
+	//taken from DQLin
+	float nrm_max = max_dist_along(shading_pos, shading_normal, input_ssbo.pbt[pbt_light_index].bb.min_bounds.xyz, input_ssbo.pbt[pbt_light_index].bb.max_bounds.xyz);
+	vec3 d = min(max(shading_pos, input_ssbo.pbt[pbt_light_index].bb.min_bounds.xyz), input_ssbo.pbt[pbt_light_index].bb.max_bounds.xyz) - shading_pos;
+	vec3 tng = d - dot(d, shading_normal) * shading_normal;
+	float hyp2 = dot(tng, tng) + nrm_max * nrm_max;
+	return step(0.0, nrm_max) * nrm_max * inversesqrt(hyp2);
 }
 
 float mat_term(in int pbt_light_index, in vec3 shading_pos, in vec3 shading_ambient, in vec3 shading_diffuse, in float shading_specular, in vec3 shading_normal)
@@ -166,29 +189,6 @@ float mat_term(in int pbt_light_index, in vec3 shading_pos, in vec3 shading_ambi
 	vec3 ambient = ambientStrength * (input_ssbo.pbt[pbt_light_index].total_intensity.x / 3.0) * shading_ambient;
 
 	// diffuse0
-	//vec3 lightDir = normalize(input_ssbo.pbt[pbt_light_index].position.xyz - shading_pos);
-	//float max_z = minput_ssbo.pbt[pbt_light_index].bb.max_bounds.z;
-	//float diff = max_z;
-	//if (max_z >= 0)
-	//{
-	//	float denom = pow(input_ssbo.pbt[pbt_light_index].bb.min_bounds.x, 2.0);
-	//	denom += pow(input_ssbo.pbt[pbt_light_index].bb.min_bounds.y, 2.0);
-	//	denom += max_z;
-	/*
-		denom = sqrt(denom);
-
-		diff /= sqrt(denom);
-	}
-	else
-	{
-		float denom = pow(input_ssbo.pbt[pbt_light_index].bb.max_bounds.x, 2.0);
-		denom += pow(input_ssbo.pbt[pbt_light_index].bb.max_bounds.y, 2.0);
-		denom += max_z;
-
-		denom = sqrt(denom);
-
-		diff /= sqrt(denom);
-	}*/
 
 	float diff = 0;
 
@@ -198,10 +198,10 @@ float mat_term(in int pbt_light_index, in vec3 shading_pos, in vec3 shading_ambi
 	cands[1] = dot(shading_normal, normalize(vec3(input_ssbo.pbt[pbt_light_index].bb.min_bounds.x, input_ssbo.pbt[pbt_light_index].bb.min_bounds.y, input_ssbo.pbt[pbt_light_index].bb.max_bounds.z) - shading_pos));
 	cands[2] = dot(shading_normal, normalize(vec3(input_ssbo.pbt[pbt_light_index].bb.min_bounds.x, input_ssbo.pbt[pbt_light_index].bb.max_bounds.y, input_ssbo.pbt[pbt_light_index].bb.min_bounds.z) - shading_pos));
 	cands[3] = dot(shading_normal, normalize(vec3(input_ssbo.pbt[pbt_light_index].bb.min_bounds.x, input_ssbo.pbt[pbt_light_index].bb.max_bounds.y, input_ssbo.pbt[pbt_light_index].bb.max_bounds.z) - shading_pos));
-	cands[4] = dot(shading_normal, normalize(vec3(input_ssbo.pbt[pbt_light_index].bb.min_bounds.x, input_ssbo.pbt[pbt_light_index].bb.min_bounds.y, input_ssbo.pbt[pbt_light_index].bb.min_bounds.z) - shading_pos));
-	cands[5] = dot(shading_normal, normalize(vec3(input_ssbo.pbt[pbt_light_index].bb.min_bounds.x, input_ssbo.pbt[pbt_light_index].bb.min_bounds.y, input_ssbo.pbt[pbt_light_index].bb.max_bounds.z) - shading_pos));
-	cands[6] = dot(shading_normal, normalize(vec3(input_ssbo.pbt[pbt_light_index].bb.min_bounds.x, input_ssbo.pbt[pbt_light_index].bb.max_bounds.y, input_ssbo.pbt[pbt_light_index].bb.min_bounds.z) - shading_pos));
-	cands[7] = dot(shading_normal, normalize(vec3(input_ssbo.pbt[pbt_light_index].bb.min_bounds.x, input_ssbo.pbt[pbt_light_index].bb.max_bounds.y, input_ssbo.pbt[pbt_light_index].bb.max_bounds.z) - shading_pos));
+	cands[4] = dot(shading_normal, normalize(vec3(input_ssbo.pbt[pbt_light_index].bb.max_bounds.x, input_ssbo.pbt[pbt_light_index].bb.min_bounds.y, input_ssbo.pbt[pbt_light_index].bb.min_bounds.z) - shading_pos));
+	cands[5] = dot(shading_normal, normalize(vec3(input_ssbo.pbt[pbt_light_index].bb.max_bounds.x, input_ssbo.pbt[pbt_light_index].bb.min_bounds.y, input_ssbo.pbt[pbt_light_index].bb.max_bounds.z) - shading_pos));
+	cands[6] = dot(shading_normal, normalize(vec3(input_ssbo.pbt[pbt_light_index].bb.max_bounds.x, input_ssbo.pbt[pbt_light_index].bb.max_bounds.y, input_ssbo.pbt[pbt_light_index].bb.min_bounds.z) - shading_pos));
+	cands[7] = dot(shading_normal, normalize(vec3(input_ssbo.pbt[pbt_light_index].bb.max_bounds.x, input_ssbo.pbt[pbt_light_index].bb.max_bounds.y, input_ssbo.pbt[pbt_light_index].bb.max_bounds.z) - shading_pos));
 
 	for (int local_index = 0; local_index < 8; ++local_index)
 	{
@@ -221,7 +221,7 @@ float mat_term(in int pbt_light_index, in vec3 shading_pos, in vec3 shading_ambi
 
 float error_bound(in int pbt_light_index, in vec3 shading_pos, in vec3 shading_ambient, in vec3 shading_diffuse, in float shading_specular, in vec3 shading_normal)
 {
-	return geo_term(pbt_light_index, shading_pos) * mat_term(pbt_light_index, shading_pos, shading_ambient, shading_diffuse, shading_specular, shading_normal) * input_ssbo.pbt[pbt_light_index].total_intensity.x;
+	return geo_term(pbt_light_index, shading_pos, shading_normal) * mat_term(pbt_light_index, shading_pos, shading_ambient, shading_diffuse, shading_specular, shading_normal) * input_ssbo.pbt[pbt_light_index].total_intensity.x;
 }
 
 void main()
@@ -230,7 +230,7 @@ void main()
 
 	vec2 sampler_coords = vec2(pixel_coords * 16) / vec2(800,600);
 
-	uint output_index = (pixel_coords.y * 51 + pixel_coords.x) * LIGHTCUT_SIZE;
+	uint output_index = (pixel_coords.y * 51 + pixel_coords.x) * MAX_LIGHTCUT_SIZE;
 
 	vec3 pos = texture(g_position, sampler_coords).xyz;
 	vec3 norm = texture(g_normal, sampler_coords).xyz;
@@ -239,13 +239,21 @@ void main()
 	float spec = texture(g_diff_spec, sampler_coords).w;
 
 	//will break
-	BinaryHeap lightcut_heap = BinaryHeap(0, float[LIGHTCUT_SIZE](-1.0, -1.0, -1.0, -1.0, -1.0, -1.0), int[LIGHTCUT_SIZE](-1, -1, -1, -1, -1, -1));
+	BinaryHeap lightcut_heap;
+
+	lightcut_heap.count = 0;
+
+	for (int a = 0; a < MAX_LIGHTCUT_SIZE; ++a)
+	{
+		lightcut_heap.data[a] = -1;
+		lightcut_heap.metric[a] = -1;
+	}
 
 	float root_error_bound = error_bound(0, pos, amb, diff, spec, norm);
 
 	insert_node(lightcut_heap, 0, root_error_bound);
 
-	while (lightcut_heap.count < 6)
+	while (lightcut_heap.count < misc_vars.lightcuts_size)
 	{
 		int pbr_light_index = lightcut_heap.data[0];
 

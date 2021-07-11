@@ -16,9 +16,11 @@ struct Light
     vec4 color;
 };
 
-layout (std140) uniform Lights {
-    Light lights[200];
-};
+layout(std430) buffer;
+
+layout (binding = 4) buffer Lights {
+    Light lights[];
+} lights;
 
 uniform uint num_lights;
 
@@ -50,21 +52,21 @@ void main()
 
     for(int light_index = 0; light_index < num_lights; ++light_index)
     {
-        dist = distance(FragPos, lights[light_index].position.xyz);
+        dist = distance(FragPos, lights.lights[light_index].position.xyz);
         attenuation = 1.0 / (1.0 + a*dist + b*dist*dist);
 
         // ambient0
-        ambient = ambientStrength * lights[light_index].color.rgb * texture(g_ambient, TexCoords).rgb;
+        ambient = ambientStrength * lights.lights[light_index].color.rgb * texture(g_ambient, TexCoords).rgb;
   	
         // diffuse0
-        lightDir = normalize(lights[light_index].position.xyz - FragPos);
+        lightDir = normalize(lights.lights[light_index].position.xyz - FragPos);
         diff = max(dot(norm, lightDir), 0.0);
-        diffuse = diff * lights[light_index].color.rgb * texture(g_diff_spec, TexCoords).rgb;
+        diffuse = diff * lights.lights[light_index].color.rgb * texture(g_diff_spec, TexCoords).rgb;
     
         // specular0
         reflectDir = reflect(-lightDir, norm);  
         spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
-        specular = specularStrength * spec * lights[light_index].color.rgb * vec3(texture(g_diff_spec, TexCoords).a);
+        specular = specularStrength * spec * lights.lights[light_index].color.rgb * vec3(texture(g_diff_spec, TexCoords).a);
 
         result += attenuation * (ambient + diffuse + specular);
     }

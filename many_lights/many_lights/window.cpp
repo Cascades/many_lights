@@ -77,14 +77,20 @@ void ml::Window::process_input(float const & delta_time)
     }
     if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS)
     {
-        in_imgui = !in_imgui;
-        if (in_imgui)
+        if (std::chrono::duration_cast<std::chrono::seconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count() > last_tab_press + 1)
         {
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        }
-        else
-        {
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            last_tab_press = std::chrono::duration_cast<std::chrono::seconds>(
+                std::chrono::system_clock::now().time_since_epoch()).count();
+            in_imgui = !in_imgui;
+            if (in_imgui)
+            {
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            }
+            else
+            {
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            }
         }
     }
 }

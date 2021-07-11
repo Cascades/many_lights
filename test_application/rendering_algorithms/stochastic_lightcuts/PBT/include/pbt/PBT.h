@@ -27,6 +27,7 @@ struct PBTNode
 {
     PBTBoundingBox<SpaceT> bb;
     glm::vec4 total_intensity = glm::vec4(0.0f);
+    glm::ivec4 original_index = glm::vec4(-1, 0, 0, 0);
 
     PBTNode<SpaceT, LightT> operator+(PBTNode<SpaceT, LightT> const& right)
     {
@@ -237,6 +238,7 @@ private:
             data[num_leaves - 1 + light_index].total_intensity.x = lights.data()[morton_index_code[light_index].first].color.r +
                 lights.data()[morton_index_code[light_index].first].color.g +
                 lights.data()[morton_index_code[light_index].first].color.b;
+            data[num_leaves - 1 + light_index].original_index.r = morton_index_code[light_index].first;
         }
 
         // TODO: remove/refactor

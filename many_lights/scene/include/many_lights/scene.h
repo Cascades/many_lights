@@ -11,15 +11,16 @@
 
 namespace ml
 {
+	template<size_t max_lights>
 	struct Scene
 	{
-		Scene(std::shared_ptr<ml::Camera> camera, std::shared_ptr<ml::SceneEntities> models, std::shared_ptr<ml::SceneLights<200>> lights) :
+		Scene(std::shared_ptr<ml::Camera> camera, std::shared_ptr<ml::SceneEntities> models, std::shared_ptr<ml::SceneLights<max_lights>> lights) :
 			camera(std::move(camera)),
 			models(std::move(models)),
 			lights(std::move(lights))
 		{}
 		std::shared_ptr<ml::Camera> camera;
 		std::shared_ptr<ml::SceneEntities> models;
-		std::shared_ptr<ml::SceneLights<200>> lights;
+		std::shared_ptr<ml::SceneLights<max_lights>> lights;
 	};
 }

@@ -22,6 +22,8 @@ namespace ml
 
 		std::shared_ptr<ml::Camera> camera;
 
+		uint32_t last_tab_press = 0;
+
 	public:
 		Window(std::shared_ptr<ml::Camera> camera);
 		~Window();

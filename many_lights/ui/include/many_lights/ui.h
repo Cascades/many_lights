@@ -17,6 +17,9 @@ namespace ml
 
         int current_index;
 
+        bool num_lights_changed = false;
+        bool light_heights_changed = false;
+
 		void init(ml::Window& win)
 		{
 			// Setup Dear ImGui context
@@ -30,8 +33,11 @@ namespace ml
 		}
 
 		template <size_t max_lights>
-		void begin_ui(ml::BenchMarker& bm, ml::SceneLights<max_lights>& lights, std::vector<std::shared_ptr<ml::ManyLightsAlgorithm>> const & algorithms)
+		void begin_ui(ml::BenchMarker& bm, ml::SceneLights<max_lights>& lights, std::vector<std::shared_ptr<ml::ManyLightsAlgorithm<max_lights>>> const & algorithms)
 		{
+            num_lights_changed = false;
+            light_heights_changed = false;
+			
             ImGui_ImplOpenGL3_NewFrame();
             ImGui_ImplGlfw_NewFrame();
             ImGui::NewFrame();
@@ -41,6 +47,8 @@ namespace ml
 			// have to use int for imgui
             if (ImGui::SliderInt("num_lights", &int_num_lights, 0, static_cast<int>(lights.get_max_lights())))
             {
+                num_lights_changed = true;
+            	
                 lights.num_lights = int_num_lights;
                 lights.calculate_light_positions();
 
@@ -48,10 +56,19 @@ namespace ml
                 lights.ubo_light_block.buffer_sub_data(0, lights.size_bytes(), lights.data());
                 lights.ubo_light_block.unbind();
 
+                glBindBuffer(GL_ARRAY_BUFFER, lights.sphereMatrixVBO);
+                glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * max_lights, &lights.light_model_positions[0], GL_STATIC_DRAW);
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
 
+                glBindBuffer(GL_ARRAY_BUFFER, lights.sphereColorVBO);
+                glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * max_lights, &lights.light_colors[0], GL_STATIC_DRAW);
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+                
             }
             if (ImGui::SliderFloat("lights_height", &lights.lights_height, 1.0f, 1200.0f))
             {
+                light_heights_changed = true;
+            	
                 lights.calculate_light_positions();
 
                 lights.ubo_light_block.bind();
@@ -61,7 +78,14 @@ namespace ml
 
             for (int i = 0; i < algorithms.size(); ++i)
             {
-                ImGui::RadioButton(algorithms[i]->get_name().c_str(), &current_index, i);
+                if(ImGui::RadioButton(algorithms[i]->get_name().c_str(), &current_index, i))
+                {
+                    num_lights_changed = true;
+                    light_heights_changed = true;
+                }
+                ImGui::Indent(16.0f);
+                algorithms[i]->ui(num_lights_changed, light_heights_changed);
+                ImGui::Unindent(16.0f);
             }
             
             if (bm)
