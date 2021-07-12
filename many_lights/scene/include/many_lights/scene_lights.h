@@ -83,7 +83,7 @@ namespace ml
         	
             for (uint32_t light_index = 0; light_index < max_lights; ++light_index)
             {
-                
+                //light_rand_offsets[light_index] = glm::vec3(0.0f);
                 light_rand_offsets[light_index] = glm::vec3(dis_x(e), dis_y(e), dis_z(e));
             }
         };

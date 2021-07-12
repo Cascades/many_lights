@@ -7,13 +7,13 @@
 
 int main()
 {
-    constexpr size_t max_lights = 8000;
+    constexpr size_t max_lights = 5000;
 	
     std::unique_ptr<ml::ManyLights<max_lights>> many_lights = std::make_unique<ml::ManyLights<max_lights>>();
     many_lights->add_model("../assets/sponza/sponza.obj");
-    many_lights->set_lights(70, 3.0f);
+    many_lights->set_lights(20, 3.0f);
 
-    many_lights->add_algorithm<TestApplication::StochasticLightcuts<max_lights, 20>>(many_lights->get_scene());
+    many_lights->add_algorithm<TestApplication::StochasticLightcuts<max_lights, 20, 32>>(many_lights->get_scene());
     many_lights->add_algorithm<TestApplication::Deferred<max_lights>>(many_lights->get_scene());
     many_lights->add_algorithm<TestApplication::ForwardBlinnPhong<max_lights>>(many_lights->get_scene());
 

@@ -17,10 +17,6 @@ uniform uint num_lights;
 
 layout(std430) buffer;
 
-layout (binding = 4) buffer Lights {
-    Light lights[];
-} lights;
-
 struct PBTBoundingBox
 {
     vec4 min_bounds;
@@ -44,14 +40,19 @@ layout(binding = 1) buffer LightcutsSSBO {
 } lightcuts_ssbo;
 
 layout(binding = 2) buffer MiscSSBO {
-	vec3 viewPos;
+	vec4 viewPos;
     int iFrame;
     int lightcuts_size;
+    int tile_size;
 } misc_vars;
 
 layout(binding = 3) buffer GridCellDebug {
 	int lightcuts[];
 } grid_cell_debug;
+
+layout (binding = 4) buffer Lights {
+    Light lights[];
+} lights;
 
 uniform sampler2D g_position;
 uniform sampler2D g_normal;
@@ -70,8 +71,8 @@ int get_right_child_index(int i)
 
 bool node_is_leaf(int index)
 {
-    float dead_node_mult = step(0.0000001, input_ssbo.pbt[get_left_child_index(index)].total_intensity.x + input_ssbo.pbt[get_right_child_index(index)].total_intensity.x);
-    return (index >= (input_ssbo.pbt.length() / 2)) && (dead_node_mult == 0.0);
+    //float dead_node_mult = step(0.0000001, input_ssbo.pbt[get_left_child_index(index)].total_intensity.x + input_ssbo.pbt[get_right_child_index(index)].total_intensity.x);
+    return index >= (input_ssbo.pbt.length() / 2);
 }
 
 float get_distance_squared(in vec3 shading_point, in vec3 other_point)
@@ -85,7 +86,7 @@ float get_min_distance_squared(in vec3 shading_point, in int pbt_index)
 {
     vec3 closest_point = clamp(shading_point, input_ssbo.pbt[pbt_index].bb.min_bounds.xyz, input_ssbo.pbt[pbt_index].bb.max_bounds.xyz); 
 
-    return get_distance_squared(shading_point, closest_point);
+    return max(0.00001, get_distance_squared(shading_point, closest_point));
 }
 
 float get_max_distance_squared(in vec3 shading_point, in int pbt_index)
@@ -135,13 +136,13 @@ float geo_term(in int pbt_light_index, in vec3 shading_pos, in vec3 shading_norm
 	vec3 d = min(max(shading_pos, input_ssbo.pbt[pbt_light_index].bb.min_bounds.xyz), input_ssbo.pbt[pbt_light_index].bb.max_bounds.xyz) - shading_pos;
 	vec3 tng = d - dot(d, shading_normal) * shading_normal;
 	float hyp2 = dot(tng, tng) + nrm_max * nrm_max;
-	return step(0.0, nrm_max) * nrm_max * inversesqrt(hyp2);
+	return step(0.0001, nrm_max) * nrm_max * inversesqrt(hyp2);
 }
 
 float mat_term(in int pbt_light_index, in vec3 shading_pos, in vec3 shading_ambient, in vec3 shading_diffuse, in float shading_specular, in vec3 shading_normal)
 {
 	// can be taken out of here
-	vec3 viewDir = normalize(misc_vars.viewPos - shading_pos);
+	vec3 viewDir = normalize(vec3(misc_vars.viewPos) - shading_pos);
 
 	float specularStrength = 0.5;
 	float ambientStrength = 0.2;
@@ -176,7 +177,7 @@ float mat_term(in int pbt_light_index, in vec3 shading_pos, in vec3 shading_ambi
 	//vec3 specular = vec3(specularStrength * spec * (input_ssbo.pbt[pbt_light_index].total_intensity.x / 3.0) * shading_specular);
 	vec3 specular = vec3(0.0);
 
-	return dot(vec3(1.0), ambient + diffuse + specular) / 3.0;
+	return max(1.0, dot(vec3(1.0), ambient + diffuse + specular) / 3.0);
 }
 
 float reflectance_bound(in int pbt_light_index, in vec3 shading_pos, in vec3 shading_ambient, in vec3 shading_diffuse, in float shading_specular, in vec3 shading_normal)
@@ -221,7 +222,7 @@ int sample_node(in int node_index, inout int seed, in vec3 shading_pos, in vec3 
 
         /*if(intensity(left_child_index) == dead_node_value)
         {
-            /*if(intensity(right_child_index) == dead_node_value)
+            if(intensity(right_child_index) == dead_node_value)
             {
                 break;
             }
@@ -230,7 +231,7 @@ int sample_node(in int node_index, inout int seed, in vec3 shading_pos, in vec3 
         }
         else if(intensity(right_child_index) == dead_node_value)
         {
-            /*if(intensity(left_child_index) == dead_node_value)
+            if(intensity(left_child_index) == dead_node_value)
             {
                 break;
             }
@@ -303,7 +304,7 @@ void main()
     float diff;
 
     float specularStrength = 0.5;
-    vec3 viewDir = normalize(misc_vars.viewPos - FragPos);
+    vec3 viewDir = normalize(vec3(misc_vars.viewPos) - FragPos);
     vec3 reflectDir;  
     float spec;
 
@@ -317,18 +318,26 @@ void main()
 
     uint seed = uint(screen_coord.x) + uint(800U*screen_coord.y) + (800U*600U)*uint(misc_vars.iFrame);
 
-    ivec2 grid_coord = ivec2(screen_coord / 16.0);
+    ivec2 grid_coord = ivec2(screen_coord / float(misc_vars.tile_size));
 
-    //int final_light_indices[MAX_LIGHTCUT_SIZE];
+    int final_light_indices[MAX_LIGHTCUT_SIZE];
+
+    for(int dummy = 0; dummy < MAX_LIGHTCUT_SIZE; ++dummy)
+    {
+        final_light_indices[dummy] = -1;
+    }
 
     for(int cut_index = 0; cut_index < misc_vars.lightcuts_size; ++cut_index)
     {
-        int light_index = lightcuts_ssbo.lightcuts[((grid_coord.y * 51 + grid_coord.x) * MAX_LIGHTCUT_SIZE) + cut_index];
+        int light_index = lightcuts_ssbo.lightcuts[((grid_coord.y * ((800 / misc_vars.tile_size) + 1) + grid_coord.x) * MAX_LIGHTCUT_SIZE) + cut_index];
 
-        int final_light_index = sample_node(light_index, seed, texture(g_position, TexCoords).rgb, texture(g_ambient, TexCoords).rgb, texture(g_diff_spec, TexCoords).rgb, texture(g_diff_spec, TexCoords).a, texture(g_normal, TexCoords).rgb);
-        final_light_index = input_ssbo.pbt[final_light_index].original_index.r;
+        int sampled_index = sample_node(light_index, seed, texture(g_position, TexCoords).rgb, texture(g_ambient, TexCoords).rgb, texture(g_diff_spec, TexCoords).rgb, texture(g_diff_spec, TexCoords).a, texture(g_normal, TexCoords).rgb);
 
-        //final_light_indices[cut_index] = final_light_index;
+        int final_light_index = input_ssbo.pbt[sampled_index].original_index.r;
+
+        final_light_indices[cut_index * 3] = light_index;
+        final_light_indices[cut_index * 3 + 1] = sampled_index;
+        final_light_indices[cut_index * 3 + 2] = final_light_index;
 
         dist = distance(FragPos, lights.lights[final_light_index].position.xyz);
         attenuation = 1.0 / (1.0 + a*dist + b*dist*dist);
@@ -355,22 +364,22 @@ void main()
         result += attenuation * (ambient + diffuse + specular) * scaling_factor;
     }
 
-    //if(grid_coord == ivec2(25, 15))
-    //{
-    //    int grid_x = int(screen_coord.x) % 16;
-    //   int grid_y = int(screen_coord.y) % 16;
-    //    for(int j = 0; j < MAX_LIGHTCUT_SIZE; ++j)
-   //     {
-    //        grid_cell_debug.lightcuts[(grid_y * 16 + grid_x) * (MAX_LIGHTCUT_SIZE + 3) + j] = final_light_indices[j];
-     /*   }
-        grid_cell_debug.lightcuts[(grid_y * 16 + grid_x) * (MAX_LIGHTCUT_SIZE + 3) + MAX_LIGHTCUT_SIZE] = int(result.r * 255);
-        grid_cell_debug.lightcuts[(grid_y * 16 + grid_x) * (MAX_LIGHTCUT_SIZE + 3) + MAX_LIGHTCUT_SIZE + 1] = int(result.g * 255);
-        grid_cell_debug.lightcuts[(grid_y * 16 + grid_x) * (MAX_LIGHTCUT_SIZE + 3) + MAX_LIGHTCUT_SIZE + 2] = int(result.b * 255);
+    if(grid_coord == ivec2(25, 15))
+    {
+        int grid_x = int(screen_coord.x) % misc_vars.tile_size;
+        int grid_y = int(screen_coord.y) % misc_vars.tile_size;
+        for(int j = 0; j < MAX_LIGHTCUT_SIZE; ++j)
+        {
+            grid_cell_debug.lightcuts[(grid_y * misc_vars.tile_size + grid_x) * (MAX_LIGHTCUT_SIZE) + j] = final_light_indices[j];
+        }
+        //grid_cell_debug.lightcuts[(grid_y * 16 + grid_x) * (MAX_LIGHTCUT_SIZE + 3) + MAX_LIGHTCUT_SIZE] = int(result.r * 255);
+        //grid_cell_debug.lightcuts[(grid_y * 16 + grid_x) * (MAX_LIGHTCUT_SIZE + 3) + MAX_LIGHTCUT_SIZE + 1] = int(result.g * 255);
+        //grid_cell_debug.lightcuts[(grid_y * 16 + grid_x) * (MAX_LIGHTCUT_SIZE + 3) + MAX_LIGHTCUT_SIZE + 2] = int(result.b * 255);
 
         //grid_cell_debug.lightcuts[0] = input_ssbo.pbt[337].bb.min_bounds.x;
 
         result.r = 1.0;
-    }*/
+    }
 
     FragColor = vec4(result, 1.0);
 } 

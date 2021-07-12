@@ -192,7 +192,7 @@ private:
                 data[(log_level + current_child) / 2] = data[log_level + current_child] + data[log_level + current_child + 1];
             }
         }
-        std::cout << "fin" << std::endl;
+        //std::cout << "fin" << std::endl;
     }
 
     // assign true values to leaf nodes of the tree (the lights)
@@ -203,7 +203,7 @@ private:
         morton_index_code.reserve(lights.get_num_lights());
         morton_index_code.clear();
 
-        std::cout << "Number of leaves: " << num_leaves << std::endl;
+        //std::cout << "Number of leaves: " << num_leaves << std::endl;
     	
         // TODO: remove/refactor
         const auto t1 = std::chrono::high_resolution_clock::now();
@@ -244,6 +244,6 @@ private:
         // TODO: remove/refactor
         const auto t2 = std::chrono::high_resolution_clock::now();
         const std::chrono::duration<double, std::milli> ms_double = t2 - t1;
-        std::cout << ms_double.count() << "ms" << std::endl;
+        //std::cout << ms_double.count() << "ms" << std::endl;
     }
 };

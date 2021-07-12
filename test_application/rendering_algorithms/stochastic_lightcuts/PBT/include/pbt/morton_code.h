@@ -6,11 +6,6 @@ namespace MortonCodeGenerator
     // interleaves uin32_t bits (morton code)
     inline uint32_t get_morton_bit_expansion(uint32_t v)
     {
-        /*v = (v * 0x00010001u) & 0xFF0000FFu;
-        v = (v * 0x00000101u) & 0x0F00F00Fu;
-        v = (v * 0x00000011u) & 0xC30C30C3u;
-        v = (v * 0x00000005u) & 0x49249249u;*/
-
         v = (v | v << 16) & 0x30000ff;
         v = (v | v << 8) & 0x300f00f;
         v = (v | v << 4) & 0x30c30c3;

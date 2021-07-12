@@ -11,7 +11,7 @@
 
 namespace TestApplication
 {
-	template <size_t max_lights, size_t max_lightcuts_size>
+	template <size_t max_lights, size_t max_lightcuts_size, int32_t max_tile_size>
 	class StochasticLightcuts final : public ml::ManyLightsAlgorithm<max_lights>
 	{
 	public:
@@ -33,8 +33,12 @@ namespace TestApplication
 		int height = 600;
 
 		int32_t lightcuts_size;
+		int generation_type = 0;
 
-		std::array<int, 51 * 38 * max_lightcuts_size> lightcuts_array;
+		int32_t tile_size = 16;
+		static constexpr int32_t min_tile_size = 2;
+
+		std::array<int, ((800/ min_tile_size) + 1) * ((600 / min_tile_size) + 1) * max_lightcuts_size> lightcuts_array;
 
 		unsigned int quadVAO;
 		unsigned int quadVBO;
@@ -57,8 +61,8 @@ namespace TestApplication
 	};
 }
 
-template<size_t max_lights, size_t max_lightcuts_size>
-void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size>::init(int const& width, int const& height, ml::Scene<max_lights> const& scene)
+template<size_t max_lights, size_t max_lightcuts_size, int32_t max_tile_size>
+void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_tile_size>::init(int const& width, int const& height, ml::Scene<max_lights> const& scene)
 {
 	lightcuts_size = 6;
 
@@ -151,23 +155,23 @@ void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size>::init(
 
 	glGenBuffers(1, &lightcuts);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, lightcuts);
-	glNamedBufferStorage(lightcuts, sizeof(int) * 51 * 38 * max_lightcuts_size, NULL, GL_DYNAMIC_STORAGE_BIT);
+	glNamedBufferStorage(lightcuts, sizeof(int) * ((800 / min_tile_size) + 1) * ((600 / min_tile_size) + 1) * max_lightcuts_size, NULL, GL_DYNAMIC_STORAGE_BIT);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, lightcuts);
 
-	glNamedBufferSubData(lightcuts, 0, sizeof(int) * 51 * 38 * lightcuts_size, lightcuts_array.data());
+	glNamedBufferSubData(lightcuts, 0, sizeof(int) * ((800 / tile_size) + 1) * ((600 / tile_size) + 1) * lightcuts_size, lightcuts_array.data());
 
 	glGenBuffers(1, &miscVars);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, miscVars);
-	glNamedBufferStorage(miscVars, sizeof(glm::vec3) + sizeof(int32_t) + sizeof(int32_t), NULL, GL_DYNAMIC_STORAGE_BIT);
+	glNamedBufferStorage(miscVars, sizeof(glm::vec4) + sizeof(int32_t) + sizeof(int32_t) + sizeof(int32_t), NULL, GL_DYNAMIC_STORAGE_BIT);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, miscVars);
 
 	glGenBuffers(1, &grid_cell_debug);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, grid_cell_debug);
 
 	std::vector<int32_t> grid_cell_debug_data;
-	grid_cell_debug_data.assign(16 * 16 * (max_lightcuts_size + 3), -1);
+	grid_cell_debug_data.assign(min_tile_size * min_tile_size * max_lightcuts_size * 3, -1);
 	
-	glNamedBufferStorage(grid_cell_debug, sizeof(int32_t) * 16 * 16 * (max_lightcuts_size + 3), grid_cell_debug_data.data(), GL_DYNAMIC_STORAGE_BIT);
+	glNamedBufferStorage(grid_cell_debug, sizeof(int32_t) * min_tile_size * min_tile_size * max_lightcuts_size * 3, grid_cell_debug_data.data(), GL_DYNAMIC_STORAGE_BIT);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, grid_cell_debug);
 
 	int work_grp_cnt[3];
@@ -177,36 +181,46 @@ void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size>::init(
 	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 2, &work_grp_cnt[2]);
 }
 
-template<size_t max_lights, size_t max_lightcuts_size>
-void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size>::ui(bool const& num_lights_changed, bool const& light_heights_changed)
+template<size_t max_lights, size_t max_lightcuts_size, int32_t max_tile_size>
+void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_tile_size>::ui(bool const& num_lights_changed, bool const& light_heights_changed)
 {
 	if(num_lights_changed)
 	{
 		glNamedBufferSubData(SSBO, 0, perfect_balanced_tree.size_bytes(), perfect_balanced_tree.get_data());
-		glNamedBufferSubData(lightcuts, 0, sizeof(int) * 51 * 38 * lightcuts_size, lightcuts_array.data());
+		glNamedBufferSubData(lightcuts, 0, sizeof(int) * ((800 / tile_size) + 1) * ((600 / tile_size) + 1) * lightcuts_size, lightcuts_array.data());
 
 		std::vector<int32_t> grid_cell_debug_data;
-		grid_cell_debug_data.assign(16 * 16 * (max_lightcuts_size + 3), -1);
+		grid_cell_debug_data.assign(max_tile_size * max_tile_size * (max_lightcuts_size) * 3, -1);
 
-		glNamedBufferStorage(grid_cell_debug, sizeof(int32_t) * 16 * 16 * (max_lightcuts_size + 3), grid_cell_debug_data.data(), GL_DYNAMIC_STORAGE_BIT);
+		glNamedBufferStorage(grid_cell_debug, sizeof(int32_t) * max_tile_size * max_tile_size * (max_lightcuts_size) * 3, grid_cell_debug_data.data(), GL_DYNAMIC_STORAGE_BIT);
 	}
 	else if(light_heights_changed)
 	{
 		glNamedBufferSubData(SSBO, 0, perfect_balanced_tree.size_bytes(), perfect_balanced_tree.get_data());
-		glNamedBufferSubData(lightcuts, 0, sizeof(int) * 51 * 38 * lightcuts_size, lightcuts_array.data());
+		glNamedBufferSubData(lightcuts, 0, sizeof(int) * ((800 / tile_size) + 1) * ((600 / tile_size) + 1) * lightcuts_size, lightcuts_array.data());
 		
 		std::vector<int32_t> grid_cell_debug_data;
-		grid_cell_debug_data.assign(16 * 16 * (max_lightcuts_size + 3), -1);
+		grid_cell_debug_data.assign(max_tile_size * max_tile_size * (max_lightcuts_size), -1);
 
-		glNamedBufferStorage(grid_cell_debug, sizeof(int32_t) * 16 * 16 * (max_lightcuts_size + 3), grid_cell_debug_data.data(), GL_DYNAMIC_STORAGE_BIT);
+		glNamedBufferStorage(grid_cell_debug, sizeof(int32_t) * max_tile_size * max_tile_size * (max_lightcuts_size), grid_cell_debug_data.data(), GL_DYNAMIC_STORAGE_BIT);
 		
 	}
 	
 	ImGui::SliderInt("Lightcut Size", &lightcuts_size, 0, max_lightcuts_size);
+	ImGui::SliderInt("Tile Size", &tile_size, min_tile_size, max_tile_size);
+
+	if(ImGui::RadioButton("CPU tree generation", &generation_type, 0))
+	{
+		std::cout << 0 << std::endl;
+	}
+	else if(ImGui::RadioButton("GPU tree generation", &generation_type, 1))
+	{
+		std::cout << 1 << std::endl;
+	}
 }
 
-template<size_t max_lights, size_t max_lightcuts_size>
-void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size>::adjust_size(int const& width, int const& height)
+template<size_t max_lights, size_t max_lightcuts_size, int32_t max_tile_size>
+void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_tile_size>::adjust_size(int const& width, int const& height)
 {
 	this->width = width;
 	this->height = height;
@@ -248,8 +262,8 @@ void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size>::adjus
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-template<size_t max_lights, size_t max_lightcuts_size>
-void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size>::render(ml::Scene<max_lights>& scene)
+template<size_t max_lights, size_t max_lightcuts_size, int32_t max_tile_size>
+void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_tile_size>::render(ml::Scene<max_lights>& scene)
 {
 	perfect_balanced_tree.regenerate(*scene.lights);
 	//perfect_balanced_tree.print();
@@ -280,9 +294,10 @@ void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size>::rende
 	generate_cut_shader.set_int("g_diff_spec", 2);
 	generate_cut_shader.set_int("g_ambient", 3);
 
-	glNamedBufferSubData(miscVars, 0, sizeof(glm::vec3), glm::value_ptr(scene.camera->position));
-	glNamedBufferSubData(miscVars, sizeof(glm::vec3), sizeof(uint32_t), &frame_count);
-	glNamedBufferSubData(miscVars, sizeof(glm::vec3) + sizeof(uint32_t), sizeof(uint32_t), &lightcuts_size);
+	glNamedBufferSubData(miscVars, 0, sizeof(glm::vec4), glm::value_ptr(glm::vec4(scene.camera->position, 1.0)));
+	glNamedBufferSubData(miscVars, sizeof(glm::vec4), sizeof(uint32_t), &frame_count);
+	glNamedBufferSubData(miscVars, sizeof(glm::vec4) + sizeof(uint32_t), sizeof(uint32_t), &lightcuts_size);
+	glNamedBufferSubData(miscVars, sizeof(glm::vec4) + sizeof(uint32_t) + sizeof(int32_t), sizeof(int32_t), &tile_size);
 	frame_count++;
 
 	glActiveTexture(GL_TEXTURE0);
@@ -294,7 +309,7 @@ void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size>::rende
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, g_ambient);
 
-	glDispatchCompute(width / 16 + 1, height / 16 + 1, 1);
+	glDispatchCompute(width / tile_size + 1, height / tile_size + 1, 1);
 
 	/////////////////////////////////////////////////
 

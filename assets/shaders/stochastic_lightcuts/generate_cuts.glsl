@@ -32,9 +32,10 @@ layout(binding = 1) buffer OutputSSBO {
 } output_ssbo;
 
 layout(binding = 2) buffer MiscSSBO {
-	vec3 viewPos;
+	vec4 viewPos;
 	int iFrame;
 	int lightcuts_size;
+	int tile_size;
 } misc_vars;
 
 
@@ -62,8 +63,8 @@ int get_right_child_index(int i)
 
 bool node_is_leaf(int index)
 {
-	float dead_node_mult = step(0.0000001, input_ssbo.pbt[get_left_child_index(index)].total_intensity.x + input_ssbo.pbt[get_right_child_index(index)].total_intensity.x);
-	return (index >= (input_ssbo.pbt.length() / 2)) && (dead_node_mult == 0.0);
+	//float dead_node_mult = step(0.0000001, input_ssbo.pbt[get_left_child_index(index)].total_intensity.x + input_ssbo.pbt[get_right_child_index(index)].total_intensity.x);
+	return index >= (input_ssbo.pbt.length() / 2);
 }
 
 void insert_node(inout BinaryHeap b, int d, float m)
@@ -180,7 +181,7 @@ float geo_term(in int pbt_light_index, in vec3 shading_pos, in vec3 shading_norm
 float mat_term(in int pbt_light_index, in vec3 shading_pos, in vec3 shading_ambient, in vec3 shading_diffuse, in float shading_specular, in vec3 shading_normal)
 {
 	// can be taken out of here
-	vec3 viewDir = normalize(misc_vars.viewPos - shading_pos);
+	vec3 viewDir = normalize(vec3(misc_vars.viewPos) - shading_pos);
 
 	float specularStrength = 0.5;
 	float ambientStrength = 0.2;
@@ -216,7 +217,7 @@ float mat_term(in int pbt_light_index, in vec3 shading_pos, in vec3 shading_ambi
 	//vec3 specular = vec3(specularStrength * spec * (input_ssbo.pbt[pbt_light_index].total_intensity.x / 3.0) * shading_specular);
 	vec3 specular = vec3(0.0);
 
-	return dot(vec3(1.0), ambient + diffuse + specular) / 3.0;
+	return max(1.0, dot(vec3(1.0), ambient + diffuse + specular) / 3.0);
 }
 
 float error_bound(in int pbt_light_index, in vec3 shading_pos, in vec3 shading_ambient, in vec3 shading_diffuse, in float shading_specular, in vec3 shading_normal)
@@ -224,13 +225,45 @@ float error_bound(in int pbt_light_index, in vec3 shading_pos, in vec3 shading_a
 	return geo_term(pbt_light_index, shading_pos, shading_normal) * mat_term(pbt_light_index, shading_pos, shading_ambient, shading_diffuse, shading_specular, shading_normal) * input_ssbo.pbt[pbt_light_index].total_intensity.x;
 }
 
+int xorshift(in int value) {
+	// Xorshift*32
+	// Based on George Marsaglia's work: http://www.jstatsoft.org/v08/i14/paper
+	value ^= value << 13;
+	value ^= value >> 17;
+	value ^= value << 5;
+	return value;
+}
+
+float hash1(uint n)
+{
+	// integer hash copied from Hugo Elias
+	n = (n << 13U) ^ n;
+	n = n * (n * n * 15731U + 789221U) + 1376312589U;
+	return float(n & uvec3(0x7fffffffU)) / float(0x7fffffff);
+}
+
 void main()
 {
 	uvec2 pixel_coords = uvec2(gl_GlobalInvocationID.xy);
 
-	vec2 sampler_coords = vec2(pixel_coords * 16) / vec2(800,600);
+	vec2 top_left_of_tile = vec2(pixel_coords * misc_vars.tile_size);
 
-	uint output_index = (pixel_coords.y * 51 + pixel_coords.x) * MAX_LIGHTCUT_SIZE;
+	uint seed = uint(top_left_of_tile.x) + uint(800U * top_left_of_tile.y) + (800U * 600U) * uint(misc_vars.iFrame);
+
+	float rngSeed = hash1(seed);
+	seed = abs(xorshift(int(rngSeed * 100000000.0)));
+	float ran_val_x = clamp(fract(float(seed) / 3141.592653), 0.0, 1.0);
+	rngSeed = hash1(seed);
+	seed = abs(xorshift(int(rngSeed * 100000000.0)));
+	float ran_val_y = clamp(fract(float(seed) / 3141.592653), 0.0, 1.0);
+
+	vec2 ran_offset = vec2(ran_val_x, ran_val_y);
+
+	ran_offset = vec2(0.0);
+
+	vec2 sampler_coords = (top_left_of_tile + (ran_offset * misc_vars.tile_size)) / vec2(800,600);
+
+	uint output_index = (pixel_coords.y * ((800 / misc_vars.tile_size) + 1) + pixel_coords.x) * MAX_LIGHTCUT_SIZE;
 
 	vec3 pos = texture(g_position, sampler_coords).xyz;
 	vec3 norm = texture(g_normal, sampler_coords).xyz;
@@ -260,8 +293,26 @@ void main()
 		int left_child_index = get_left_child_index(pbr_light_index);
 		int right_child_index = get_right_child_index(pbr_light_index);
 
-		float left_error_bound = error_bound(left_child_index, pos, amb, diff, spec, norm);
-		float right_error_bound = error_bound(right_child_index, pos, amb, diff, spec, norm);
+		float left_error_bound;
+		float right_error_bound;
+
+		if (node_is_leaf(left_child_index))
+		{
+			left_error_bound = -1;
+		}
+		else
+		{
+			left_error_bound = error_bound(left_child_index, pos, amb, diff, spec, norm);
+		}
+
+		if (node_is_leaf(right_child_index))
+		{
+			right_error_bound = -1;
+		}
+		else
+		{
+			right_error_bound = error_bound(right_child_index, pos, amb, diff, spec, norm);
+		}
 
 		delete_root(lightcut_heap);
 
@@ -273,21 +324,17 @@ void main()
 
 	if (data)
 	{
-		output_ssbo.lightcuts[output_index + 0] = lightcut_heap.data[0];
-		output_ssbo.lightcuts[output_index + 1] = lightcut_heap.data[1];
-		output_ssbo.lightcuts[output_index + 2] = lightcut_heap.data[2];
-		output_ssbo.lightcuts[output_index + 3] = lightcut_heap.data[3];
-		output_ssbo.lightcuts[output_index + 4] = lightcut_heap.data[4];
-		output_ssbo.lightcuts[output_index + 5] = lightcut_heap.data[5];
+		for (int i = 0; i < misc_vars.lightcuts_size; ++i)
+		{
+			output_ssbo.lightcuts[output_index + i] = lightcut_heap.data[i];
+		}
 	}
 	else
 	{
-		output_ssbo.lightcuts[output_index + 0] = int(10 * lightcut_heap.metric[0]);
-		output_ssbo.lightcuts[output_index + 1] = int(10 * lightcut_heap.metric[1]);
-		output_ssbo.lightcuts[output_index + 2] = int(10 * lightcut_heap.metric[2]);
-		output_ssbo.lightcuts[output_index + 3] = int(10 * lightcut_heap.metric[3]);
-		output_ssbo.lightcuts[output_index + 4] = int(10 * lightcut_heap.metric[4]);
-		output_ssbo.lightcuts[output_index + 5] = int(10 * lightcut_heap.metric[5]);
+		for (int i = 0; i < misc_vars.lightcuts_size; ++i)
+		{
+			output_ssbo.lightcuts[output_index + i] = int(10 * lightcut_heap.metric[i]);
+		}
 	}
 
 	//output_ssbo.lightcuts[output_index] = int(pixel_coords.y);
