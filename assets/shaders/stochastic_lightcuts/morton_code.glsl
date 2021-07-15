@@ -4,11 +4,43 @@ layout(local_size_x = 1, local_size_y = 1) in;
 
 layout(std430) buffer;
 
+struct PBTBoundingBox
+{
+    vec4 min_bounds;
+    vec4 max_bounds;
+};
+
+struct PBTNode
+{
+    PBTBoundingBox bb;
+    vec4 total_intensity;
+    ivec4 original_index;
+};
+
+struct Light
+{
+    vec4 position;
+    vec4 color;
+};
+
 layout(binding = 0) buffer InputSSBO {
-    uint stage;
-    uint pass_num;
-    uint original_indicies[];
+    PBTNode pbt[];
 } input_ssbo;
+
+layout(binding = 4) buffer Lights {
+    Light lights[];
+} lights;
+
+layout(binding = 5) buffer VarsSSBO {
+    vec4 max_bound;
+    vec4 min_bound;
+    uint num_leaves;
+    uint num_lights;
+} morton_vars;
+
+layout(binding = 6) buffer MortonSSBO {
+    uint morton_index_code[];
+} morton_ssbo;
 
 // interleaves uin32_t bits (morton code)
 uint get_morton_bit_expansion(in uint v)
@@ -35,8 +67,37 @@ uint get_morton_code(in float x, in float y, in float z)
 
 void main()
 {
-        glm::vec<3, LightT> const& current_pos = lights.data()[light_index].position;
-        morton_index_code.emplace_back(std::make_pair(light_index, MortonCodeGenerator::get_morton_code((current_pos.x - lights.x_bounds[0]) / x_dist,
-            (current_pos.y - lights.y_bounds[0]) / y_dist,
-            (current_pos.z - lights.z_bounds[0]) / z_dist)));
+    uint curr_index = gl_GlobalInvocationID.x;
+
+    // get size of root bounding box
+    float x_dist = morton_vars.max_bound.x - morton_vars.min_bound.x;
+    float y_dist = morton_vars.max_bound.y - morton_vars.min_bound.y;
+    float z_dist = morton_vars.max_bound.z - morton_vars.min_bound.z;
+
+    //morton_ssbo.morton_index_code[curr_index * 2] = curr_index;
+    if (lights.lights[curr_index].color.r + lights.lights[curr_index].color.g + lights.lights[curr_index].color.b != 0.0)
+    {
+        morton_ssbo.morton_index_code[curr_index] = get_morton_code((lights.lights[curr_index].position.x - morton_vars.min_bound.x) / x_dist,
+            (lights.lights[curr_index].position.y - morton_vars.min_bound.y) / y_dist,
+            (lights.lights[curr_index].position.z - morton_vars.min_bound.z) / z_dist);
+    }
+    else
+    {
+        morton_ssbo.morton_index_code[curr_index] = 0;
+    }
+
+    input_ssbo.pbt[(input_ssbo.pbt.length() / 2) + curr_index] = PBTNode(PBTBoundingBox(lights.lights[curr_index].position, lights.lights[curr_index].position), vec4(dot(vec3(1.0), lights.lights[curr_index].color.xyz)), ivec4(curr_index));
+
+   // morton_ssbo.morton_index_code[curr_index] = curr_index;
+
+    // fill leaves in order
+    //for (size_t light_index = 0; light_index < lights.get_num_lights(); ++light_index)
+    //{
+    //    data[num_leaves - 1 + light_index].bb.min_bounds = lights.data()[morton_index_code[light_index].first].position;
+    //    data[num_leaves - 1 + light_index].bb.max_bounds = lights.data()[morton_index_code[light_index].first].position;
+    //    data[num_leaves - 1 + light_index].total_intensity.x = lights.data()[morton_index_code[light_index].first].color.r +
+    //        lights.data()[morton_index_code[light_index].first].color.g +
+    //        lights.data()[morton_index_code[light_index].first].color.b;
+    //    data[num_leaves - 1 + light_index].original_index.r = morton_index_code[light_index].first;
+    //}
 }

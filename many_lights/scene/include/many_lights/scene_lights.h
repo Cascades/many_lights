@@ -24,7 +24,8 @@ namespace ml
         std::array<glm::vec4, max_lights> light_model_positions;
         std::array<glm::vec4, max_lights> light_colors;
         std::array<glm::vec3, max_lights> light_rand_offsets;
-    	
+
+        uint32_t light_power = 0;
         uint32_t num_lights = 70;
         float lights_height = 3.0f;
 
@@ -32,7 +33,7 @@ namespace ml
 
         void calculate_light_positions()
         {
-            //num_lights = 1;
+            const auto t1 = std::chrono::high_resolution_clock::now();
         	
             for (uint32_t light_index = 0; light_index < num_lights; ++light_index)
             {
@@ -49,14 +50,27 @@ namespace ml
                 y_bounds[0] = glm::min(y_pos, y_bounds[0]);
                 z_bounds[1] = glm::max(z_pos, z_bounds[1]);
                 z_bounds[0] = glm::min(z_pos, z_bounds[0]);
+
+                min_bounds = glm::vec4(x_bounds[0], y_bounds[0], z_bounds[0], 1.0f);
+                max_bounds = glm::vec4(x_bounds[1], y_bounds[1], z_bounds[1], 1.0f);
             	
                 lights[light_index].position = glm::vec4(x_pos, y_pos, z_pos, 1.0);
+            	
                 lights[light_index].color = glm::vec4(ml::utils::hsv_to_rgb(glm::vec3(light_index * (1.0f / num_lights), 1.0, 1.0)), 1.0);
                 light_colors[light_index] = glm::vec4(ml::utils::hsv_to_rgb(glm::vec3(light_index * (1.0f / num_lights), 1.0, 1.0)), 1.0);
+
+                //lights[light_index].color = glm::vec4(glm::vec3(1.0, 1.0, 1.0), 1.0) * (1.0f / static_cast<float>(num_lights));
+                //light_colors[light_index] = glm::vec4(glm::vec3(1.0, 1.0, 1.0), 1.0) * (1.0f / static_cast<float>(num_lights));
+            	
                 light_model_matrices[light_index] = glm::mat4(1.0f);
                 light_model_matrices[light_index] = glm::translate(light_model_matrices[light_index], glm::vec3(x_pos, y_pos, z_pos));
                 light_model_positions[light_index] = glm::vec4(x_pos, y_pos, z_pos, 1.0);
             }
+
+            const auto t2 = std::chrono::high_resolution_clock::now();
+            const std::chrono::duration<double, std::milli> ms_double = t2 - t1;
+
+            std::cout << "position generation: " << ms_double << std::endl;
         }
 
     public:
@@ -67,6 +81,9 @@ namespace ml
         glm::vec2 x_bounds = glm::vec2(0.0f);
         glm::vec2 y_bounds = glm::vec2(0.0f);
         glm::vec2 z_bounds = glm::vec2(0.0f);
+
+		glm::vec4 min_bounds = glm::vec4(0.0f);
+        glm::vec4 max_bounds = glm::vec4(0.0f);
 		
         SceneLights() :
             lights(),

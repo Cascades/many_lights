@@ -1,7 +1,7 @@
 #version 460 core
 
 #define MAX_LIGHTS 200
-#define MAX_LIGHTCUT_SIZE 20
+#define MAX_LIGHTCUT_SIZE 100
 
 out vec4 FragColor;
 
@@ -44,6 +44,7 @@ layout(binding = 2) buffer MiscSSBO {
     int iFrame;
     int lightcuts_size;
     int tile_size;
+    float random_tile_sample;
 } misc_vars;
 
 layout(binding = 3) buffer GridCellDebug {
@@ -357,14 +358,14 @@ void main()
 
         vec3 light_sum = ambient + diffuse + specular;
 
-        //float scaling_factor = input_ssbo.pbt[light_index].total_intensity.x / (dot(vec3(1.0), light_sum) / 3.0);
+        //float scaling_factor = dot(vec3(1.0), light_sum) / input_ssbo.pbt[light_index].total_intensity.x;
 
         float scaling_factor = 1.0;
 
-        result += attenuation * (ambient + diffuse + specular) * scaling_factor;
+        result += attenuation * light_sum * scaling_factor;
     }
 
-    if(grid_coord == ivec2(25, 15))
+    /*if(grid_coord == ivec2(25, 15))
     {
         int grid_x = int(screen_coord.x) % misc_vars.tile_size;
         int grid_y = int(screen_coord.y) % misc_vars.tile_size;
@@ -379,7 +380,7 @@ void main()
         //grid_cell_debug.lightcuts[0] = input_ssbo.pbt[337].bb.min_bounds.x;
 
         result.r = 1.0;
-    }
+    }*/
 
     FragColor = vec4(result, 1.0);
 } 

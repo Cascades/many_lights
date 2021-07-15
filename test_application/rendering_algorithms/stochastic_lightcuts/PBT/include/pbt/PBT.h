@@ -130,12 +130,12 @@ public:
         return data[index];
     }
 
-    size_t size() noexcept
+    constexpr size_t size() noexcept
     {
         return data.size();
     }
 
-    size_t size_bytes() noexcept
+    constexpr size_t size_bytes() noexcept
     {
         return data.size() * sizeof(PBTNode<SpaceT, LightT>);
     }

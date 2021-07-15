@@ -34,7 +34,7 @@ namespace TestApplication
 			return "Forward";
 		}
 
-		void ui(bool const& num_lights_changed, bool const& light_heights_changed) override {}
+		void ui(bool const& num_lights_changed, bool const& light_heights_changed, ml::Scene<max_lights> const& scene) override {}
 	};
 
 	template<size_t max_lights>

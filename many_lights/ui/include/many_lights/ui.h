@@ -33,7 +33,7 @@ namespace ml
 		}
 
 		template <size_t max_lights>
-		void begin_ui(ml::BenchMarker& bm, ml::SceneLights<max_lights>& lights, std::vector<std::shared_ptr<ml::ManyLightsAlgorithm<max_lights>>> const & algorithms)
+		void begin_ui(ml::BenchMarker& bm, ml::SceneLights<max_lights>& lights, std::vector<std::shared_ptr<ml::ManyLightsAlgorithm<max_lights>>> const & algorithms, ml::Scene<max_lights> const & scene)
 		{
             num_lights_changed = false;
             light_heights_changed = false;
@@ -43,9 +43,10 @@ namespace ml
             ImGui::NewFrame();
 
             ImGui::Begin("Demo window");
+            //int power_of_lights = lights.light_power;
             int int_num_lights = lights.get_num_lights();
 			// have to use int for imgui
-            if (ImGui::SliderInt("num_lights", &int_num_lights, 0, static_cast<int>(lights.get_max_lights())))
+            if (ImGui::SliderInt("num_lights", &int_num_lights, 0, lights.get_max_lights()))
             {
                 num_lights_changed = true;
             	
@@ -65,6 +66,9 @@ namespace ml
                 glBindBuffer(GL_ARRAY_BUFFER, 0);
                 
             }
+
+           // ImGui::Text(std::to_string(lights.num_lights).c_str());
+			
             if (ImGui::SliderFloat("lights_height", &lights.lights_height, 1.0f, 1200.0f))
             {
                 light_heights_changed = true;
@@ -84,7 +88,7 @@ namespace ml
                     light_heights_changed = true;
                 }
                 ImGui::Indent(16.0f);
-                algorithms[i]->ui(num_lights_changed, light_heights_changed);
+                algorithms[i]->ui(num_lights_changed, light_heights_changed, scene);
                 ImGui::Unindent(16.0f);
             }
             

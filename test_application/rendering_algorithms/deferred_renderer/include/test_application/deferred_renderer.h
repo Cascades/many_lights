@@ -23,6 +23,8 @@ namespace TestApplication
 		unsigned int quadVAO;
 		unsigned int quadVBO;
 
+		int32_t render_mode = 0;
+
 		void init(int const& width, int const& height, ml::Scene<max_lights> const& scene) override;
 
 		void adjust_size(int const& width, int const& height) override;
@@ -34,7 +36,15 @@ namespace TestApplication
 			return "Deferred";
 		}
 
-		void ui(bool const& num_lights_changed, bool const& light_heights_changed) override {}
+		void ui(bool const& num_lights_changed, bool const& light_heights_changed, ml::Scene<max_lights> const& scene) override
+		{
+			ImGui::RadioButton("Position", &render_mode, 0);
+			ImGui::RadioButton("Normal", &render_mode, 1);
+			ImGui::RadioButton("Diffuse", &render_mode, 2);
+			ImGui::RadioButton("Specular", &render_mode, 3);
+			ImGui::RadioButton("Ambient", &render_mode, 4);
+			ImGui::RadioButton("Composed", &render_mode, 5);
+		}
 	};
 
 	template<size_t max_lights>
@@ -178,6 +188,7 @@ namespace TestApplication
 
 		light_pass_shader.set_floatv3("viewPos", 1, glm::value_ptr(scene.camera->position));
 		light_pass_shader.set_uint("num_lights", scene.lights->get_num_lights());
+		light_pass_shader.set_int("render_mode", render_mode);
 
 		light_pass_shader.set_int("g_position", 0);
 		light_pass_shader.set_int("g_normal", 1);

@@ -153,24 +153,21 @@ namespace ml
             renderer.render();
 
         	// start ui render
-            user_interface.begin_ui(bm, *scene->lights, algorithms);
+            user_interface.begin_ui(bm, *scene->lights, algorithms, *scene);
 
         	// being benchmarking if required
             bm.begin_if_primed();
         	// render scene using user algorithm
             current_algorithm->render(*scene);
 
-            std::cout << "3" << glGetError() << std::endl;
             scene->lights->sphereShader.use();
 
             scene->lights->sphereShader.set_mat_4x4_floatv("model", 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
             scene->lights->sphereShader.set_mat_4x4_floatv("view", 1, GL_FALSE, glm::value_ptr(scene->camera->GetViewMatrix()));
             scene->lights->sphereShader.set_mat_4x4_floatv("projection", 1, GL_FALSE, glm::value_ptr(scene->camera->projection_matrix));
         	
-            std::cout << "2" << glGetError() << std::endl;
             glBindVertexArray(scene->lights->sphereVAO);
             //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, scene->lights->sphereEBO);
-            std::cout << "1" << glGetError() << std::endl;
             glDrawElementsInstanced(GL_TRIANGLES, scene->lights->sphere.get_meshes()[0].indices.size(), GL_UNSIGNED_INT, nullptr, scene->lights->get_num_lights());
         	
             glBindVertexArray(0);

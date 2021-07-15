@@ -1,6 +1,6 @@
 #version 460
 
-#define MAX_LIGHTCUT_SIZE 20
+#define MAX_LIGHTCUT_SIZE 100
 
 layout(local_size_x = 1, local_size_y = 1) in;
 uniform sampler2D g_position;
@@ -36,6 +36,7 @@ layout(binding = 2) buffer MiscSSBO {
 	int iFrame;
 	int lightcuts_size;
 	int tile_size;
+	float random_tile_sample;
 } misc_vars;
 
 
@@ -257,9 +258,7 @@ void main()
 	seed = abs(xorshift(int(rngSeed * 100000000.0)));
 	float ran_val_y = clamp(fract(float(seed) / 3141.592653), 0.0, 1.0);
 
-	vec2 ran_offset = vec2(ran_val_x, ran_val_y);
-
-	ran_offset = vec2(0.0);
+	vec2 ran_offset = vec2(ran_val_x, ran_val_y) * (1.0 - misc_vars.random_tile_sample);
 
 	vec2 sampler_coords = (top_left_of_tile + (ran_offset * misc_vars.tile_size)) / vec2(800,600);
 
