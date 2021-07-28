@@ -1,4 +1,6 @@
 #pragma once
+#define GTEST_LANG_CXX11 1
+#define _HAS_TR1_NAMESPACE 1
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
@@ -178,7 +180,7 @@ namespace ml
         	// render scene using user algorithm
             current_algorithm->render(*scene);
 
-            scene->lights->sphereShader.use();
+            /*scene->lights->sphereShader.use();
 
             scene->lights->sphereShader.set_mat_4x4_floatv("model", 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
             scene->lights->sphereShader.set_mat_4x4_floatv("view", 1, GL_FALSE, glm::value_ptr(scene->camera->GetViewMatrix()));
@@ -188,7 +190,7 @@ namespace ml
             //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, scene->lights->sphereEBO);
             glDrawElementsInstanced(GL_TRIANGLES, scene->lights->sphere.get_meshes()[0].indices.size(), GL_UNSIGNED_INT, nullptr, scene->lights->get_num_lights());
         	
-            glBindVertexArray(0);
+            glBindVertexArray(0);*/
         	
         	// end benchmarking if begun
             bm.end_if_primed();

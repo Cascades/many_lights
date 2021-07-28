@@ -7,7 +7,7 @@
 
 int main()
 {
-    constexpr size_t max_lights = 50000;
+    constexpr size_t max_lights = 20000;
 	
     std::unique_ptr<ml::ManyLights<max_lights>> many_lights = std::make_unique<ml::ManyLights<max_lights>>();
     many_lights->add_model("../assets/sponza/sponza.obj");

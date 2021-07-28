@@ -442,8 +442,6 @@ void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_ti
 		uint32_t d = 1;
 		
 		glNamedBufferSubData(bitonic_vars, 2 * sizeof(uint32_t), sizeof(uint32_t), &d);
-
-		std::cout << "reached" << std::endl;
 		
 		for (uint32_t internal_level = static_cast<uint32_t>(std::log2(static_cast<float>(max_lights * 2 - 1))); internal_level > 0; --internal_level)
 		{

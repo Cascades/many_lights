@@ -80,13 +80,13 @@ int main()
 
 	glm::vec3 org_value = glm::vec3(5.0f);
 
-	/*points.push_back(org.x);
+	points.push_back(org.x);
 	points.push_back(org.y);
 	points.push_back(org.z);
 
 	points.push_back(org_value.r);
 	points.push_back(org_value.g);
-	points.push_back(org_value.b);*/
+	points.push_back(org_value.b);
 	
 	while (points.size() < 6 * 20000)
 	{
@@ -111,7 +111,7 @@ int main()
 		nanort::TriangleIntersection<> isect{};
 
 		size_t bounces = 0;
-		size_t max_bounces = 2;
+		size_t max_bounces = 3;
 		
 		while (bounces < max_bounces)
 		{
