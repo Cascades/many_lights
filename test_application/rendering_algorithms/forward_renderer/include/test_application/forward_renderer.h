@@ -14,6 +14,10 @@ namespace TestApplication
 	private:
 		ml::Shader forward_blinn_phong;
 
+		unsigned int lighting_comp_atomic;
+		unsigned int lighting_comp_atomic_back;
+		void* lighting_comp_atomic_map;
+
 	public:
 		ForwardBlinnPhong() = default;
 		
@@ -21,7 +25,10 @@ namespace TestApplication
 
 		ForwardBlinnPhong(int const& width, int const& height, ml::Scene<max_lights> const& scene);
 
-		~ForwardBlinnPhong() override = default;
+		~ForwardBlinnPhong() override
+		{
+			glUnmapNamedBuffer(lighting_comp_atomic);
+		}
 
 		void init(int const& width, int const& height, ml::Scene<max_lights> const & scene) override;
 
@@ -34,7 +41,28 @@ namespace TestApplication
 			return "Forward";
 		}
 
-		void ui(bool const& num_lights_changed, bool const& light_heights_changed, ml::Scene<max_lights> const& scene) override {}
+		void ui(bool const& num_lights_changed, bool const& light_heights_changed, std::shared_ptr<ml::Scene<max_lights>> scene) override
+		{
+			glMemoryBarrier(GL_ATOMIC_COUNTER_BARRIER_BIT);
+			GLuint* userCounters = (GLuint*)glMapNamedBufferRange(lighting_comp_atomic,
+				0,
+				sizeof(GLuint),
+				GL_MAP_READ_BIT
+			);
+			GLuint counter_val = *userCounters;
+			glUnmapNamedBuffer(lighting_comp_atomic);
+
+			userCounters = (GLuint*)glMapNamedBufferRange(lighting_comp_atomic,
+				0,
+				sizeof(GLuint),
+				GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT
+			);
+			memset(userCounters, 0, sizeof(GLuint));
+			glUnmapNamedBuffer(lighting_comp_atomic);
+			
+			ImGui::Text("lighting computations = %d", counter_val);
+			glMemoryBarrier(GL_ATOMIC_COUNTER_BARRIER_BIT);
+		}
 	};
 
 	template<size_t max_lights>
@@ -63,6 +91,13 @@ namespace TestApplication
 		}
 
 		glUniformBlockBinding(*forward_blinn_phong.id, glGetUniformBlockIndex(*forward_blinn_phong.id, "Lights"), 0);
+
+		GLuint start_val = 0;
+		
+		glGenBuffers(1, &lighting_comp_atomic);
+		glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, lighting_comp_atomic);
+		glNamedBufferData(lighting_comp_atomic, sizeof(GLuint), &start_val, GL_DYNAMIC_DRAW);
+		glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0, lighting_comp_atomic);
 	}
 
 	template<size_t max_lights>

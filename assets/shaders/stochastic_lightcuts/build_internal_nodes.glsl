@@ -1,6 +1,6 @@
 #version 460
 
-layout(local_size_x = 1, local_size_y = 1) in;
+layout(local_size_x = 8, local_size_y = 8) in;
 
 layout(std430) buffer;
 
@@ -22,32 +22,48 @@ layout(binding = 0) buffer InputSSBO {
 } input_ssbo;
 
 layout(binding = 7) buffer BitonicSSBO {
-    uint stage;
-    uint pass_num;
-    uint num_lights;
+    uint level;
+    uint level_size;
+    uint d;
     uint max_lights;
 } bitonic_vars;
 
 void main()
 {
-    uint n = gl_GlobalInvocationID.x;
-    uint node_d = uint(floor(log2(n + 1)));
-    uint max_d = uint(floor(log2(input_ssbo.pbt.length())));
-    uint target_d = max_d - node_d;
+    uvec3 total_invocation_grid = gl_NumWorkGroups * gl_WorkGroupSize;
+    uint total_invocation_grid_size = uint(dot(total_invocation_grid, uvec3(1)));
 
-    uint left_leaf_node = uint(pow(2, target_d)) * n + (uint(pow(2, target_d)) - 1);
-    uint right_leaf_node = uint(pow(2, target_d)) * n + (uint(pow(2, target_d + 1)) - 2);
+    uint n =
+        (gl_GlobalInvocationID.z * total_invocation_grid.x * total_invocation_grid.y +
+        gl_GlobalInvocationID.y * total_invocation_grid.x +
+        gl_GlobalInvocationID.x);
 
-    input_ssbo.pbt[n] = PBTNode(PBTBoundingBox(vec4(0.0), vec4(0.0)), vec4(0.0), ivec4(-1, 0, 0, 0));
-
-    for (uint leaf_node_index = left_leaf_node; leaf_node_index <= right_leaf_node; ++leaf_node_index)
+    if (n > bitonic_vars.level_size - 1)
     {
-        if (input_ssbo.pbt[leaf_node_index].total_intensity.x != 0.0)
-        {
-            input_ssbo.pbt[n].bb.min_bounds = min(input_ssbo.pbt[n].bb.min_bounds, input_ssbo.pbt[leaf_node_index].bb.min_bounds);
-            input_ssbo.pbt[n].bb.max_bounds = max(input_ssbo.pbt[n].bb.max_bounds, input_ssbo.pbt[leaf_node_index].bb.max_bounds);
-            input_ssbo.pbt[n].total_intensity.x += input_ssbo.pbt[leaf_node_index].total_intensity.x;
-        }
+        return;
+    }
+
+    n = (bitonic_vars.level_size - 1) + n;
+
+    //uint n = gl_GlobalInvocationID.x;
+    uint node_d = bitonic_vars.level;
+    //uint max_d = uint(floor(log2(input_ssbo.pbt.length())));
+    uint target_d = bitonic_vars.d;
+
+    uint left_leaf_node = uint((1 << target_d)) * n + (uint((1 << target_d)) - 1);
+    uint right_leaf_node = uint((1 << target_d)) * n + (uint((1 << (target_d + 1))) - 2);
+
+    uint leaf_node_dist = right_leaf_node - left_leaf_node;
+
+    input_ssbo.pbt[n] = input_ssbo.pbt[left_leaf_node];
+
+    for (uint leaf_node_index = left_leaf_node + 1; leaf_node_index <= right_leaf_node; ++leaf_node_index)
+    {
+        float bb_mix = step(0.001, input_ssbo.pbt[leaf_node_index].total_intensity.x);
+
+        input_ssbo.pbt[n].bb.min_bounds = mix(input_ssbo.pbt[n].bb.min_bounds, min(input_ssbo.pbt[n].bb.min_bounds, input_ssbo.pbt[leaf_node_index].bb.min_bounds), bb_mix);
+        input_ssbo.pbt[n].bb.max_bounds = mix(input_ssbo.pbt[n].bb.max_bounds, max(input_ssbo.pbt[n].bb.max_bounds, input_ssbo.pbt[leaf_node_index].bb.max_bounds), bb_mix);
+        input_ssbo.pbt[n].total_intensity.x += input_ssbo.pbt[leaf_node_index].total_intensity.x;
     }
 
     input_ssbo.pbt[n].original_index = ivec4(n, left_leaf_node, right_leaf_node, 0);

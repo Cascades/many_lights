@@ -25,6 +25,8 @@ namespace ml
         std::vector<ml::Mesh>& get_meshes();
     private:
         // model data
+    // EDIT HACK
+    public:
         std::vector<ml::Mesh> meshes;
         std::filesystem::path directory;
         std::vector<ml::Texture> textures_loaded;
@@ -33,6 +35,6 @@ namespace ml
         void process_node(aiNode* node, const aiScene* scene);
         Mesh process_mesh(aiMesh* mesh, const aiScene* scene);
         std::vector<ml::Texture> load_material_textures(aiMaterial* mat, aiTextureType type, std::string type_name);
-        unsigned int texture_from_file(std::filesystem::path const& path, [[maybe_unused]] bool gamma, glm::vec2& dimensions);
+        unsigned int texture_from_file(std::filesystem::path const& path, [[maybe_unused]] bool gamma, glm::vec2& dimensions, std::vector<unsigned char>& temp_text_data, uint& channels);
     };
 }

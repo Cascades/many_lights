@@ -39,7 +39,7 @@ layout(binding = 5) buffer VarsSSBO {
 } morton_vars;
 
 layout(binding = 6) buffer MortonSSBO {
-    uint morton_index_code[];
+    uvec2 morton_index_code[];
 } morton_ssbo;
 
 // interleaves uin32_t bits (morton code)
@@ -77,14 +77,16 @@ void main()
     //morton_ssbo.morton_index_code[curr_index * 2] = curr_index;
     if (lights.lights[curr_index].color.r + lights.lights[curr_index].color.g + lights.lights[curr_index].color.b != 0.0)
     {
-        morton_ssbo.morton_index_code[curr_index] = get_morton_code((lights.lights[curr_index].position.x - morton_vars.min_bound.x) / x_dist,
+        morton_ssbo.morton_index_code[curr_index].x = get_morton_code((lights.lights[curr_index].position.x - morton_vars.min_bound.x) / x_dist,
             (lights.lights[curr_index].position.y - morton_vars.min_bound.y) / y_dist,
             (lights.lights[curr_index].position.z - morton_vars.min_bound.z) / z_dist);
     }
     else
     {
-        morton_ssbo.morton_index_code[curr_index] = 0;
+        morton_ssbo.morton_index_code[curr_index].x = 0;
     }
+
+    morton_ssbo.morton_index_code[curr_index].y = curr_index;
 
     input_ssbo.pbt[(input_ssbo.pbt.length() / 2) + curr_index] = PBTNode(PBTBoundingBox(lights.lights[curr_index].position, lights.lights[curr_index].position), vec4(dot(vec3(1.0), lights.lights[curr_index].color.xyz)), ivec4(curr_index));
 

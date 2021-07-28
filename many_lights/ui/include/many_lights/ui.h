@@ -33,7 +33,7 @@ namespace ml
 		}
 
 		template <size_t max_lights>
-		void begin_ui(ml::BenchMarker& bm, ml::SceneLights<max_lights>& lights, std::vector<std::shared_ptr<ml::ManyLightsAlgorithm<max_lights>>> const & algorithms, ml::Scene<max_lights> const & scene)
+		void begin_ui(ml::BenchMarker& bm, ml::SceneLights<max_lights>& lights, std::vector<std::shared_ptr<ml::ManyLightsAlgorithm<max_lights>>> const & algorithms, std::shared_ptr<ml::Scene<max_lights>> scene)
 		{
             num_lights_changed = false;
             light_heights_changed = false;
@@ -51,7 +51,7 @@ namespace ml
                 num_lights_changed = true;
             	
                 lights.num_lights = int_num_lights;
-                lights.calculate_light_positions();
+                lights.calculate_lighting();
 
                 lights.ubo_light_block.bind();
                 lights.ubo_light_block.buffer_sub_data(0, lights.size_bytes(), lights.data());
@@ -67,13 +67,18 @@ namespace ml
                 
             }
 
+            if(ImGui::SliderFloat("brightness_factor", &lights.light_intensity_factor, 0.0, 1.0))
+            {
+                lights.calculate_lighting();
+            }
+
            // ImGui::Text(std::to_string(lights.num_lights).c_str());
 			
             if (ImGui::SliderFloat("lights_height", &lights.lights_height, 1.0f, 1200.0f))
             {
                 light_heights_changed = true;
             	
-                lights.calculate_light_positions();
+                lights.calculate_lighting();
 
                 lights.ubo_light_block.bind();
                 lights.ubo_light_block.buffer_sub_data(0, lights.size_bytes(), lights.data());
@@ -108,6 +113,7 @@ namespace ml
                 }
             }
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+            ImGui::Text("Position: %.3f, %.3f, %.3f", scene->camera->position.x, scene->camera->position.y, scene->camera->position.z);
             ImGui::End();
 		}
 

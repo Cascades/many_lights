@@ -13,5 +13,14 @@ void main()
 {
     fColor = color;
 
-    gl_Position = projection * view * (offset + (model * vec4(position * 6.0, 1.0)));
+    if(model[3][3] == 1.0)
+    {
+        vec3 idk = position * 6.0 + offset.xyz;
+
+        gl_Position = projection * view * vec4(idk, 1.0);
+    }
+    else
+    {
+        gl_Position = vec4(1.0);
+    }
 }
