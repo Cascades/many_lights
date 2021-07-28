@@ -14,6 +14,7 @@ namespace TestApplication
 	struct MiscVars
 	{
 		glm::vec4 viewPos;
+		glm::uvec2 screen_size;
 		int32_t iFrame;
 		int32_t lightcuts_size;
 		int32_t tile_size;
@@ -71,7 +72,7 @@ namespace TestApplication
 		int32_t tile_size = 16;
 		static constexpr int32_t min_tile_size = 2;
 
-		std::array<int, ((800/ min_tile_size) + 1) * ((600 / min_tile_size) + 1) * max_lightcuts_size> lightcuts_array;
+		std::vector<int> lightcuts_array;
 
 		unsigned int quadVAO;
 		unsigned int quadVBO;
@@ -111,7 +112,9 @@ void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_ti
 	
 	lightcuts_size = 6;
 
-	lightcuts_array.fill(-1);
+	lightcuts_array.resize(((width / min_tile_size) + 1) * ((height / min_tile_size) + 1) * max_lightcuts_size);
+	
+	std::fill(lightcuts_array.begin(), lightcuts_array.end(), -1);
 	
 	this->width = width;
 	this->height = height;
@@ -203,10 +206,10 @@ void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_ti
 
 	glGenBuffers(1, &lightcuts);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, lightcuts);
-	glNamedBufferStorage(lightcuts, sizeof(int) * ((800 / min_tile_size) + 1) * ((600 / min_tile_size) + 1) * max_lightcuts_size, NULL, GL_DYNAMIC_STORAGE_BIT);
+	glNamedBufferStorage(lightcuts, sizeof(int) * ((width / min_tile_size) + 1) * ((height / min_tile_size) + 1) * max_lightcuts_size, NULL, GL_DYNAMIC_STORAGE_BIT);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, lightcuts);
 
-	glNamedBufferSubData(lightcuts, 0, sizeof(int) * ((800 / tile_size) + 1) * ((600 / tile_size) + 1) * lightcuts_size, lightcuts_array.data());
+	glNamedBufferSubData(lightcuts, 0, sizeof(int) * ((width / tile_size) + 1) * ((height / tile_size) + 1) * lightcuts_size, lightcuts_array.data());
 
 	glGenBuffers(1, &miscVars);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, miscVars);
@@ -259,7 +262,7 @@ void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_ti
 		if (generation_type == 0)
 		{
 			glNamedBufferSubData(lights_ssbo, 0, perfect_balanced_tree.size_bytes(), perfect_balanced_tree.get_data());
-			glNamedBufferSubData(lightcuts, 0, sizeof(int) * ((800 / tile_size) + 1) * ((600 / tile_size) + 1) * lightcuts_size, lightcuts_array.data());
+			glNamedBufferSubData(lightcuts, 0, sizeof(int) * ((width / tile_size) + 1) * ((height / tile_size) + 1) * lightcuts_size, lightcuts_array.data());
 		}
 		else
 		{
@@ -281,7 +284,7 @@ void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_ti
 	else if(light_heights_changed)
 	{
 		//glNamedBufferSubData(lights_ssbo, 0, perfect_balanced_tree.size_bytes(), perfect_balanced_tree.get_data());
-		//glNamedBufferSubData(lightcuts, 0, sizeof(int) * ((800 / tile_size) + 1) * ((600 / tile_size) + 1) * lightcuts_size, lightcuts_array.data());
+		//glNamedBufferSubData(lightcuts, 0, sizeof(int) * ((width / tile_size) + 1) * ((height / tile_size) + 1) * lightcuts_size, lightcuts_array.data());
 		
 		//std::vector<int32_t> grid_cell_debug_data;
 		//grid_cell_debug_data.assign(max_tile_size * max_tile_size * (max_lightcuts_size), -1);
@@ -486,10 +489,11 @@ void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_ti
 	generate_cut_shader.set_int("g_ambient", 3);
 
 	glNamedBufferSubData(miscVars, 0, sizeof(glm::vec4), glm::value_ptr(glm::vec4(scene.camera->position, 1.0)));
-	glNamedBufferSubData(miscVars, sizeof(glm::vec4), sizeof(uint32_t), &frame_count);
-	glNamedBufferSubData(miscVars, sizeof(glm::vec4) + sizeof(uint32_t), sizeof(uint32_t), &lightcuts_size);
-	glNamedBufferSubData(miscVars, sizeof(glm::vec4) + sizeof(uint32_t) + sizeof(int32_t), sizeof(int32_t), &tile_size);
-	glNamedBufferSubData(miscVars, sizeof(glm::vec4) + sizeof(uint32_t) + sizeof(int32_t) + sizeof(int32_t), sizeof(float), &random_tiling);
+	glNamedBufferSubData(miscVars, sizeof(glm::vec4), sizeof(glm::uvec2), glm::value_ptr(glm::uvec2(width, height)));
+	glNamedBufferSubData(miscVars, sizeof(glm::uvec2) + sizeof(glm::vec4), sizeof(uint32_t), &frame_count);
+	glNamedBufferSubData(miscVars, sizeof(glm::uvec2) + sizeof(glm::vec4) + sizeof(uint32_t), sizeof(uint32_t), &lightcuts_size);
+	glNamedBufferSubData(miscVars, sizeof(glm::uvec2) + sizeof(glm::vec4) + sizeof(uint32_t) + sizeof(int32_t), sizeof(int32_t), &tile_size);
+	glNamedBufferSubData(miscVars, sizeof(glm::uvec2) + sizeof(glm::vec4) + sizeof(uint32_t) + sizeof(int32_t) + sizeof(int32_t), sizeof(float), &random_tiling);
 	frame_count++;
 
 	glActiveTexture(GL_TEXTURE0);

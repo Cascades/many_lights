@@ -88,11 +88,11 @@ int main()
 	points.push_back(org_value.g);
 	points.push_back(org_value.b);
 	
-	while (points.size() < 6 * 20000)
+	while (points.size() < 6 * 100000)
 	{
 		org = glm::vec3(0.0f, 500.0f, 0.0f);
 
-		org_value = glm::vec3(5.0f);
+		org_value = glm::vec3(2.5f);
 		
 		nanort::Ray<float> ray;
 		ray.min_t = 0.0f;
@@ -123,7 +123,7 @@ int main()
 			if (hit) {
 				float new_t = isect.t * 0.999999999999f;
 
-				float atten = 1.0f;//(1.0f / (new_t * new_t));// *(glm::dot(org_value, glm::vec3(1.0)) / 3.0f);
+				float atten = 1.0f / 2.0f;//(1.0f / (new_t * new_t));// *(glm::dot(org_value, glm::vec3(1.0)) / 3.0f);
 
 				auto& curr_mesh = many_lights->models->models[indices_sizes[3 * isect.prim_id + 0].first].meshes[indices_sizes[3 * isect.prim_id + 0].second];
 				

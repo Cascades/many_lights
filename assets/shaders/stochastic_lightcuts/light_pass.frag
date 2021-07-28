@@ -43,6 +43,7 @@ layout(binding = 1) buffer LightcutsSSBO {
 
 layout(binding = 2) buffer MiscSSBO {
 	vec4 viewPos;
+    uvec2 screen_size;
     int iFrame;
     int lightcuts_size;
     int tile_size;
@@ -319,7 +320,7 @@ void main()
 
     vec2 screen_coord = gl_FragCoord.xy;
 
-    uint seed = uint(screen_coord.x) + uint(800U*screen_coord.y) + (800U*600U)*uint(misc_vars.iFrame);
+    uint seed = uint(screen_coord.x) + uint(misc_vars.screen_size.x*screen_coord.y) + (misc_vars.screen_size.x*misc_vars.screen_size.y)*uint(misc_vars.iFrame);
 
     ivec2 grid_coord = ivec2(screen_coord / float(misc_vars.tile_size));
 
@@ -334,7 +335,7 @@ void main()
     {
         atomicCounterIncrement(lighting_comps);
 
-        int light_index = lightcuts_ssbo.lightcuts[((grid_coord.y * ((800 / misc_vars.tile_size) + 1) + grid_coord.x) * MAX_LIGHTCUT_SIZE) + cut_index];
+        int light_index = lightcuts_ssbo.lightcuts[((grid_coord.y * ((misc_vars.screen_size.x / misc_vars.tile_size) + 1) + grid_coord.x) * MAX_LIGHTCUT_SIZE) + cut_index];
 
         int sampled_index = sample_node(light_index, seed, texture(g_position, TexCoords).rgb, texture(g_ambient, TexCoords).rgb, texture(g_diff_spec, TexCoords).rgb, texture(g_diff_spec, TexCoords).a, texture(g_normal, TexCoords).rgb);
 
