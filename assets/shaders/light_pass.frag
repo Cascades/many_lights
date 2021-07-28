@@ -10,6 +10,8 @@ uniform sampler2D g_normal;
 uniform sampler2D g_diff_spec;
 uniform sampler2D g_ambient;
 
+layout(binding = 1, offset = 0) uniform atomic_uint lighting_comps;
+
 struct Light
 {
     vec4 position;
@@ -84,6 +86,8 @@ void main()
 
         for(int light_index = 0; light_index < num_lights; ++light_index)
         {
+            atomicCounterIncrement(lighting_comps);
+
             dist = distance(FragPos, lights.lights[light_index].position.xyz);
             attenuation = 1.0 / (1.0 + a*dist + b*dist*dist);
 

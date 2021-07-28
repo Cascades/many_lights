@@ -7,6 +7,8 @@ out vec4 FragColor;
 
 in vec2 TexCoords;
 
+layout(binding = 2, offset = 0) uniform atomic_uint lighting_comps;
+
 struct Light
 {
     vec4 position;
@@ -330,6 +332,8 @@ void main()
 
     for(int cut_index = 0; cut_index < misc_vars.lightcuts_size; ++cut_index)
     {
+        atomicCounterIncrement(lighting_comps);
+
         int light_index = lightcuts_ssbo.lightcuts[((grid_coord.y * ((800 / misc_vars.tile_size) + 1) + grid_coord.x) * MAX_LIGHTCUT_SIZE) + cut_index];
 
         int sampled_index = sample_node(light_index, seed, texture(g_position, TexCoords).rgb, texture(g_ambient, TexCoords).rgb, texture(g_diff_spec, TexCoords).rgb, texture(g_diff_spec, TexCoords).a, texture(g_normal, TexCoords).rgb);
@@ -340,29 +344,36 @@ void main()
         final_light_indices[cut_index * 3 + 1] = sampled_index;
         final_light_indices[cut_index * 3 + 2] = final_light_index;
 
+        vec3 light_col = lights.lights[final_light_index].color.rgb;
+
+        /*uint node_d = uint(floor(log2(light_index + 1)));
+        uint max_d = uint(floor(log2(input_ssbo.pbt.length())));
+        uint target_d = max_d - node_d;
+
+        uint left_leaf_node = uint((1 << target_d)) * light_index + (uint((1 << target_d)) - 1);
+        uint right_leaf_node = uint((1 << target_d)) * light_index + (uint((1 << (target_d + 1))) - 2);
+
+        light_col = vec3(intensity(light_index) / (right_leaf_node - left_leaf_node));*/
+
         dist = distance(FragPos, lights.lights[final_light_index].position.xyz);
         attenuation = 1.0 / (1.0 + a*dist + b*dist*dist);
 
         // ambient0
-        ambient = ambientStrength * lights.lights[final_light_index].color.rgb * texture(g_ambient, TexCoords).rgb;
+        ambient = ambientStrength * light_col * texture(g_ambient, TexCoords).rgb;
   	
         // diffuse0
         lightDir = normalize(lights.lights[final_light_index].position.xyz - FragPos);
         diff = max(dot(norm, lightDir), 0.0);
-        diffuse = diff * lights.lights[final_light_index].color.rgb * texture(g_diff_spec, TexCoords).rgb;
+        diffuse = diff * light_col * texture(g_diff_spec, TexCoords).rgb;
     
         // specular0
         reflectDir = reflect(-lightDir, norm);  
         spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
-        specular = specularStrength * spec * lights.lights[final_light_index].color.rgb * vec3(texture(g_diff_spec, TexCoords).a);
+        specular = specularStrength * spec * light_col * vec3(texture(g_diff_spec, TexCoords).a);
 
         vec3 light_sum = ambient + diffuse + specular;
 
-        //float scaling_factor = dot(vec3(1.0), light_sum) / input_ssbo.pbt[light_index].total_intensity.x;
-
-        float scaling_factor = 1.0;
-
-        result += attenuation * light_sum * scaling_factor;
+        result += attenuation * light_sum;
     }
 
     /*if(grid_coord == ivec2(25, 15))

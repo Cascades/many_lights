@@ -23,6 +23,6 @@ namespace ml
 
 		virtual std::string get_name() const = 0;
 
-		virtual void ui(bool const& num_lights_changed, bool const& light_heights_changed, ml::Scene<max_lights> const& scene) = 0;
+		virtual void ui(bool const& num_lights_changed, bool const& light_heights_changed, std::shared_ptr<ml::Scene<max_lights>> scene) = 0;
 	};
 }

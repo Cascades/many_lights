@@ -14,6 +14,7 @@ namespace TestApplication
 	public:
 		ml::Shader geometry_pass_shader;
 		ml::Shader light_pass_shader;
+		unsigned int lighting_comp_atomic;
 		unsigned int g_buffer;
 		unsigned int g_position, g_normal, g_diff_spec, g_ambient;
 		unsigned int depth_buffer;
@@ -36,7 +37,7 @@ namespace TestApplication
 			return "Deferred";
 		}
 
-		void ui(bool const& num_lights_changed, bool const& light_heights_changed, ml::Scene<max_lights> const& scene) override
+		void ui(bool const& num_lights_changed, bool const& light_heights_changed, std::shared_ptr<ml::Scene<max_lights>> scene) override
 		{
 			ImGui::RadioButton("Position", &render_mode, 0);
 			ImGui::RadioButton("Normal", &render_mode, 1);
@@ -44,6 +45,25 @@ namespace TestApplication
 			ImGui::RadioButton("Specular", &render_mode, 3);
 			ImGui::RadioButton("Ambient", &render_mode, 4);
 			ImGui::RadioButton("Composed", &render_mode, 5);
+			glMemoryBarrier(GL_ATOMIC_COUNTER_BARRIER_BIT);
+			GLuint* userCounters = (GLuint*)glMapNamedBufferRange(lighting_comp_atomic,
+				0,
+				sizeof(GLuint),
+				GL_MAP_READ_BIT
+			);
+			GLuint counter_val = *userCounters;
+			glUnmapNamedBuffer(lighting_comp_atomic);
+
+			userCounters = (GLuint*)glMapNamedBufferRange(lighting_comp_atomic,
+				0,
+				sizeof(GLuint),
+				GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT
+			);
+			memset(userCounters, 0, sizeof(GLuint));
+			glUnmapNamedBuffer(lighting_comp_atomic);
+
+			ImGui::Text("lighting computations = %d", counter_val);
+			glMemoryBarrier(GL_ATOMIC_COUNTER_BARRIER_BIT);
 		}
 	};
 
@@ -65,6 +85,13 @@ namespace TestApplication
 		glGenTextures(1, &g_diff_spec);
 		glGenTextures(1, &g_ambient);
 		glGenRenderbuffers(1, &depth_buffer);
+
+		GLuint start_val = 0;
+
+		glGenBuffers(1, &lighting_comp_atomic);
+		glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, lighting_comp_atomic);
+		glNamedBufferData(lighting_comp_atomic, sizeof(GLuint), &start_val, GL_DYNAMIC_DRAW);
+		glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 1, lighting_comp_atomic);
 
 		float quadVertices[] = {
 			// positions        // texture Coords

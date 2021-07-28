@@ -10,6 +10,8 @@ namespace ml
 	class SceneEntities
 	{
 	private:
+	//revert this hack
+	public:
 		std::vector<ml::Model> models;
 
 	public:

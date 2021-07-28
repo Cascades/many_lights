@@ -160,9 +160,13 @@ std::vector<ml::Texture> ml::Model::load_material_textures(aiMaterial* mat, aiTe
         if (!skip)
         {
             Texture texture;
-            texture.id = texture_from_file(std::filesystem::path(str.C_Str()), false, texture.size);
+            std::vector<unsigned char> temp_text_data;
+            uint channels;
+            texture.id = texture_from_file(std::filesystem::path(str.C_Str()), false, texture.size, temp_text_data, channels);
             texture.type = typeName;
             texture.path = std::filesystem::path(str.C_Str());
+            texture.image_data = temp_text_data;
+            texture.channels = channels;
             textures.push_back(texture);
             textures_loaded.push_back(texture);
         }
@@ -184,9 +188,13 @@ std::vector<ml::Texture> ml::Model::load_material_textures(aiMaterial* mat, aiTe
         if (!skip)
         {
             Texture texture;
-            texture.id = texture_from_file(std::filesystem::path("../blank.png"), false, texture.size);
+            std::vector<unsigned char> temp_text_data;
+            uint channels;
+            texture.id = texture_from_file(std::filesystem::path("../blank.png"), false, texture.size, temp_text_data, channels);
             texture.type = typeName;
             texture.path = std::filesystem::path("../blank.png");
+            texture.image_data = temp_text_data;
+            texture.channels = channels;
             textures.push_back(texture);
             textures_loaded.push_back(texture);
         }
@@ -195,7 +203,7 @@ std::vector<ml::Texture> ml::Model::load_material_textures(aiMaterial* mat, aiTe
     return textures;
 }
 
-unsigned int ml::Model::texture_from_file(std::filesystem::path const & path, [[maybe_unused]] bool gamma, glm::vec2 & dimensions)
+unsigned int ml::Model::texture_from_file(std::filesystem::path const & path, [[maybe_unused]] bool gamma, glm::vec2 & dimensions, std::vector<unsigned char> & temp_text_data, uint& channels)
 {
     unsigned int textureID;
     glGenTextures(1, &textureID);
@@ -231,6 +239,10 @@ unsigned int ml::Model::texture_from_file(std::filesystem::path const & path, [[
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        channels = nrComponents;
+
+        temp_text_data.assign(data, data + (width * height * nrComponents));
 
         stbi_image_free(data);
         dimensions.x = static_cast<float>(width);

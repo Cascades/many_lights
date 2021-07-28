@@ -13,6 +13,19 @@
 #include "many_lights/benchmarker.h"
 #include "many_lights/ui.h"
 
+inline void GLAPIENTRY
+MessageCallback(GLenum source,
+    GLenum type,
+    GLuint id,
+    GLenum severity,
+    GLsizei length,
+    const GLchar* message,
+    const void* userParam)
+{
+    fprintf(stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+        (type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""),
+        type, severity, message);
+}
 
 namespace ml
 {
@@ -23,7 +36,10 @@ namespace ml
 		std::shared_ptr<ml::Camera> camera;
 		ml::Window window;
 
+	// REVERT THIS HACK
+	public:
 		std::shared_ptr<ml::SceneEntities> models;
+	private:
 		std::shared_ptr<ml::SceneLights<max_lights>> lights;
 		std::shared_ptr<ml::Scene<max_lights>> scene;
 
@@ -35,7 +51,7 @@ namespace ml
         ml::UI user_interface;
 
     public:
-		ManyLights();
+        ManyLights();
 
 		void add_model(std::filesystem::path const& model) const;
 
@@ -45,7 +61,7 @@ namespace ml
 		//void set_algorithm(ArgTypes&&... args, ml::Scene<max_lights> const& scene);
 
         template <class T, class... ArgTypes>
-        void add_algorithm(ArgTypes&&... args, ml::Scene<max_lights> const& scene);
+        void add_algorithm(ArgTypes&&... args);
 
         ml::Scene<max_lights> const& get_scene();
 		
@@ -72,10 +88,10 @@ namespace ml
     // set the algorithm to be tested
     template<size_t max_lights>
     template<class T, class ... ArgTypes>
-    void ManyLights<max_lights>::add_algorithm(ArgTypes&&... args, ml::Scene<max_lights> const& scene)
+    void ManyLights<max_lights>::add_algorithm(ArgTypes&&... args)
     {
         algorithms.push_back(std::make_shared<T>(args...));
-        algorithms.back()->init(window.get_width(), window.get_height(), scene);
+        algorithms.back()->init(window.get_width(), window.get_height(), *scene);
         current_algorithm = algorithms.back();
     }
 
@@ -90,6 +106,8 @@ namespace ml
         renderer(std::move(ml::Renderer())),
 		user_interface()
     {
+       // glEnable(GL_DEBUG_OUTPUT);
+       // glDebugMessageCallback(MessageCallback, 0);
         window.setup_viewport(800, 600);
     }
 
@@ -153,7 +171,7 @@ namespace ml
             renderer.render();
 
         	// start ui render
-            user_interface.begin_ui(bm, *scene->lights, algorithms, *scene);
+            user_interface.begin_ui(bm, *scene->lights, algorithms, scene);
 
         	// being benchmarking if required
             bm.begin_if_primed();
