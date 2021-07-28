@@ -46,7 +46,7 @@ void main()
     n = (bitonic_vars.level_size - 1) + n;
 
     //uint n = gl_GlobalInvocationID.x;
-    uint node_d = uint(floor(log2(n + 1)));
+    uint node_d = bitonic_vars.level;
     //uint max_d = uint(floor(log2(input_ssbo.pbt.length())));
     uint target_d = bitonic_vars.d;
 

@@ -437,27 +437,32 @@ void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_ti
 			}
 		}
 
-		//std::cout << "========== END ==========" << std::endl;
-
 		internal_node_shader.use();
 
 		uint32_t d = 1;
 		
-		glNamedBufferSubData(bitonic_vars, 2* sizeof(uint32_t), sizeof(uint32_t), &d);
+		glNamedBufferSubData(bitonic_vars, 2 * sizeof(uint32_t), sizeof(uint32_t), &d);
 
-		for (uint32_t internal_level = static_cast<uint32_t>(std::log2(static_cast<float>(max_lights))) - 1; internal_level >= 0; --internal_level)
+		std::cout << "reached" << std::endl;
+		
+		for (uint32_t internal_level = static_cast<uint32_t>(std::log2(static_cast<float>(max_lights * 2 - 1))); internal_level > 0; --internal_level)
 		{
-			const uint32_t level_size = 1u << internal_level;
-
-			glNamedBufferSubData(bitonic_vars, 0, sizeof(uint32_t), &internal_level);
-			glNamedBufferSubData(bitonic_vars, sizeof(uint32_t), sizeof(uint32_t), &level_size);
+			uint32_t actual_level = internal_level - 1;
 			
+			const uint32_t level_size = 1u << (actual_level);
+
+			glNamedBufferSubData(bitonic_vars, 0, sizeof(uint32_t), &actual_level);
+			glNamedBufferSubData(bitonic_vars, sizeof(uint32_t), sizeof(uint32_t), &level_size);
+
 			glDispatchCompute((level_size / 64) + 1, 1, 1);
+
+			//std::cout << "threads_to_dispatch: " << (level_size / 64) + 1 << std::endl;
+
+			//std::cout << actual_level << " " << level_size << std::endl;
 
 			glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 			//glDispatchCompute(((std::bit_ceil(max_lights) * 2 - 1) / 2) / 64, 1, 1);
-		}
-		
+		}		
 	}
 	
 	geometry_pass_shader.use();
