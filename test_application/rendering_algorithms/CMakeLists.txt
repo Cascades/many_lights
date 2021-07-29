@@ -1,3 +1,4 @@
 add_subdirectory(deferred_renderer)
 add_subdirectory(forward_renderer)
 add_subdirectory(stochastic_lightcuts)
+add_subdirectory(vpl_renderer)

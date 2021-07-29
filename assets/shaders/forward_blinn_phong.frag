@@ -92,7 +92,7 @@ void main()
     float a = 0.001;
     float b = 0.0001;
 
-    /*for(int light_index = 0; light_index < num_lights; ++light_index)
+    for(int light_index = 0; light_index < num_lights; ++light_index)
     {
         atomicCounterIncrement(lighting_comps);
 
@@ -115,14 +115,7 @@ void main()
         vec3 out_col = attenuation * (ambient + diffuse + specular);
 
         result += step(0.0001, out_col) * out_col;
-    }*/
-
-    if(texture(texture_ambient1, TexCoords).r != -1.0 && texture(texture_specular1, TexCoords).r != -1.0 && num_lights != -1 && viewPos.x != -999999999.0)
-    {
-        result = texture(texture_diffuse1, TexCoords).rgb;
     }
-
-
 
     FragColor = vec4(result, 1.0);
 } 
