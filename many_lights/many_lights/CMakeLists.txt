@@ -20,7 +20,7 @@ target_link_libraries(many_lights PUBLIC
 	ML::UI
 )
 
-target_compile_definitions(many_lights PUBLIC NOMINMAX)
+target_compile_definitions(many_lights PUBLIC NOMINMAX _HAS_TR1_NAMESPACE)
 
 add_library(ML::ML ALIAS many_lights)
 

@@ -20,7 +20,7 @@ ml::Mesh::Mesh(std::vector<ml::Vertex> vertices, std::vector<unsigned int> indic
 }
 
 void ml::Mesh::setupMesh()
-{
+{	
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &EBO);

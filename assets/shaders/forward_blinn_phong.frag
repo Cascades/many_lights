@@ -15,6 +15,8 @@ layout(location = 7) uniform sampler2D texture_bump1;
 layout(location = 8) uniform sampler2D texture_dissolve1;
 layout(location = 9) uniform vec2 sampler_size;
 
+layout(binding = 0, offset = 0) uniform atomic_uint lighting_comps;
+
 struct Light
 {
     vec4 position;
@@ -90,8 +92,10 @@ void main()
     float a = 0.001;
     float b = 0.0001;
 
-    for(int light_index = 0; light_index < num_lights; ++light_index)
+    /*for(int light_index = 0; light_index < num_lights; ++light_index)
     {
+        atomicCounterIncrement(lighting_comps);
+
         dist = distance(FragPos, lights.lights[light_index].position.xyz);
         attenuation = 1.0 / (1.0 + a*dist + b*dist*dist);
 
@@ -111,7 +115,14 @@ void main()
         vec3 out_col = attenuation * (ambient + diffuse + specular);
 
         result += step(0.0001, out_col) * out_col;
+    }*/
+
+    if(texture(texture_ambient1, TexCoords).r != -1.0 && texture(texture_specular1, TexCoords).r != -1.0 && num_lights != -1 && viewPos.x != -999999999.0)
+    {
+        result = texture(texture_diffuse1, TexCoords).rgb;
     }
+
+
 
     FragColor = vec4(result, 1.0);
 } 

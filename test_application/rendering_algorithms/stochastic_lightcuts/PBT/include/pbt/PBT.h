@@ -200,7 +200,7 @@ private:
     {
         // calculate space requirements
         num_leaves = std::bit_ceil(lights.get_max_lights());
-        morton_index_code.reserve(lights.get_num_lights());
+        morton_index_code.reserve(num_leaves);
         morton_index_code.clear();
 
         //std::cout << "Number of leaves: " << num_leaves << std::endl;

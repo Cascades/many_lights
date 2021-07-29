@@ -1,5 +1,6 @@
 #pragma once
 #include <array>
+#include <fstream>
 #include <random>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -73,10 +74,125 @@ namespace ml
             std::cout << "position generation: " << ms_double << std::endl;
         }
 
+        void calculate_light_positions2()
+        {
+            const auto t1 = std::chrono::high_resolution_clock::now();
+
+            const auto min_x = -1600.0f;
+            const auto min_z = -1000.0f;
+            const auto max_x = 1600.0f;
+            const auto max_z = 1000.0f;
+
+            const auto length_x = max_x - min_x;
+            const auto length_z = max_z - min_z;
+
+            light_intensity_factor = 1.0f - ((std::max(static_cast<float>(num_lights) - 200.0f, 0.0f) / 50.0f) * 0.1);
+
+            for (uint32_t light_index = 0; light_index < num_lights; ++light_index)
+            {
+                float x_pos = min_x + ((light_index % 10) * (length_x / 10.0f));
+                float y_pos = lights_height + light_rand_offsets[light_index].y;
+                float max_rows = (static_cast<int64_t>(num_lights - 1) / 10);
+                float curr_row = static_cast<float>((light_index - 1) / 10);
+
+                float dist_to_jump = length_z / (max_rows + 2.0f);
+            	
+                float z_pos = min_z + (curr_row + 1.0f) * dist_to_jump;
+            	
+
+                // root bounding box calculation
+                x_bounds[1] = glm::max(x_pos, x_bounds[1]);
+                x_bounds[0] = glm::min(x_pos, x_bounds[0]);
+                y_bounds[1] = glm::max(y_pos, y_bounds[1]);
+                y_bounds[0] = glm::min(y_pos, y_bounds[0]);
+                z_bounds[1] = glm::max(z_pos, z_bounds[1]);
+                z_bounds[0] = glm::min(z_pos, z_bounds[0]);
+
+                min_bounds = glm::vec4(x_bounds[0], y_bounds[0], z_bounds[0], 1.0f);
+                max_bounds = glm::vec4(x_bounds[1], y_bounds[1], z_bounds[1], 1.0f);
+
+                lights[light_index].position = glm::vec4(x_pos, y_pos, z_pos, 1.0);
+
+                lights[light_index].color = light_intensity_factor * glm::vec4(ml::utils::hsv_to_rgb(glm::vec3(light_index * (1.0f / num_lights), 1.0, 1.0)), 1.0);
+                light_colors[light_index] = light_intensity_factor * glm::vec4(ml::utils::hsv_to_rgb(glm::vec3(light_index * (1.0f / num_lights), 1.0, 1.0)), 1.0);
+
+                //lights[light_index].color = glm::vec4(glm::vec3(1.0, 1.0, 1.0), 1.0) * (1.0f / static_cast<float>(num_lights));
+                //light_colors[light_index] = glm::vec4(glm::vec3(1.0, 1.0, 1.0), 1.0) * (1.0f / static_cast<float>(num_lights));
+
+                light_model_matrices[light_index] = glm::mat4(1.0f);
+                light_model_matrices[light_index] = glm::translate(light_model_matrices[light_index], glm::vec3(x_pos, y_pos, z_pos));
+                light_model_positions[light_index] = glm::vec4(x_pos, y_pos, z_pos, 1.0);
+            }
+
+            const auto t2 = std::chrono::high_resolution_clock::now();
+            const std::chrono::duration<double, std::milli> ms_double = t2 - t1;
+
+            std::cout << "position generation: " << ms_double << std::endl;
+        }
+
+        void calculate_light_positions3()
+        {
+            const auto t1 = std::chrono::high_resolution_clock::now();
+
+            std::ifstream infile("my_file.txt");
+        	
+            for (uint32_t light_index = 0; light_index < num_lights; ++light_index)
+            {
+            	
+                float x_pos;
+                float y_pos;
+                float z_pos;
+
+                infile >> x_pos;
+                infile >> y_pos;
+                infile >> z_pos;
+
+                // root bounding box calculation
+                x_bounds[1] = glm::max(x_pos, x_bounds[1]);
+                x_bounds[0] = glm::min(x_pos, x_bounds[0]);
+                y_bounds[1] = glm::max(y_pos, y_bounds[1]);
+                y_bounds[0] = glm::min(y_pos, y_bounds[0]);
+                z_bounds[1] = glm::max(z_pos, z_bounds[1]);
+                z_bounds[0] = glm::min(z_pos, z_bounds[0]);
+
+                min_bounds = glm::vec4(x_bounds[0], y_bounds[0], z_bounds[0], 1.0f);
+                max_bounds = glm::vec4(x_bounds[1], y_bounds[1], z_bounds[1], 1.0f);
+
+                lights[light_index].position = glm::vec4(x_pos, y_pos, z_pos, 1.0);
+
+                glm::vec4 col = glm::vec4(1.0f);
+                infile >> col[0];
+                infile >> col[1];
+                infile >> col[2];
+
+                lights[light_index].color = col;
+                light_colors[light_index] = col;
+
+                //lights[light_index].color = glm::vec4(glm::vec3(1.0, 1.0, 1.0), 1.0) * (1.0f / static_cast<float>(num_lights));
+                //light_colors[light_index] = glm::vec4(glm::vec3(1.0, 1.0, 1.0), 1.0) * (1.0f / static_cast<float>(num_lights));
+
+                light_model_matrices[light_index] = glm::mat4(1.0f);
+                light_model_matrices[light_index] = glm::translate(light_model_matrices[light_index], glm::vec3(x_pos, y_pos, z_pos));
+                light_model_positions[light_index] = glm::vec4(x_pos, y_pos, z_pos, 1.0);
+            }
+
+            const auto t2 = std::chrono::high_resolution_clock::now();
+            const std::chrono::duration<double, std::milli> ms_double = t2 - t1;
+
+            std::cout << "position generation: " << ms_double << std::endl;
+        }
+
+        void calculate_lighting()
+        {
+            calculate_light_positions3();
+        }
+
     public:
         ml::Model sphere;
         unsigned int sphereVAO, sphereVBO, sphereEBO, sphereMatrixVBO, sphereColorVBO;
         ml::Shader sphereShader;
+
+        float light_intensity_factor = 1.0f;
 		
         glm::vec2 x_bounds = glm::vec2(0.0f);
         glm::vec2 y_bounds = glm::vec2(0.0f);
@@ -111,7 +227,7 @@ namespace ml
             //light_colors.assign(max_lights, glm::vec4(0.0f));
             //light_model_matrices.assign(max_lights, glm::mat4(0.0));
 
-            calculate_light_positions();
+            calculate_lighting();
 
             ubo_light_block.buffer_data(size_bytes(), GL_DYNAMIC_DRAW);
             ubo_light_block.bind_buffer_range(static_cast<size_t>(0), static_cast<size_t>(0), size_bytes());        	

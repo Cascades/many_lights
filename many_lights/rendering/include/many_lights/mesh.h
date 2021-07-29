@@ -5,6 +5,8 @@
 #include <vector>
 #include <filesystem>
 
+#include <stb.h>
+
 #include "many_lights/shader.h"
 
 namespace ml
@@ -20,6 +22,8 @@ namespace ml
         std::string type;
         std::filesystem::path path;
         glm::vec2 size;
+        std::vector<unsigned char> image_data;
+        uint32_t channels;
     };
 
     class Mesh {

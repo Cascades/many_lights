@@ -33,10 +33,12 @@ layout(binding = 1) buffer OutputSSBO {
 
 layout(binding = 2) buffer MiscSSBO {
 	vec4 viewPos;
+	uvec2 screen_size;
 	int iFrame;
 	int lightcuts_size;
 	int tile_size;
 	float random_tile_sample;
+
 } misc_vars;
 
 
@@ -249,7 +251,7 @@ void main()
 
 	vec2 top_left_of_tile = vec2(pixel_coords * misc_vars.tile_size);
 
-	uint seed = uint(top_left_of_tile.x) + uint(800U * top_left_of_tile.y) + (800U * 600U) * uint(misc_vars.iFrame);
+	uint seed = uint(top_left_of_tile.x) + uint(misc_vars.screen_size.x * top_left_of_tile.y) + (misc_vars.screen_size.x * misc_vars.screen_size.y) * uint(misc_vars.iFrame);
 
 	float rngSeed = hash1(seed);
 	seed = abs(xorshift(int(rngSeed * 100000000.0)));
@@ -260,9 +262,9 @@ void main()
 
 	vec2 ran_offset = vec2(ran_val_x, ran_val_y) * (1.0 - misc_vars.random_tile_sample);
 
-	vec2 sampler_coords = (top_left_of_tile + (ran_offset * misc_vars.tile_size)) / vec2(800,600);
+	vec2 sampler_coords = (top_left_of_tile + (ran_offset * misc_vars.tile_size)) / vec2(misc_vars.screen_size.x, misc_vars.screen_size.y);
 
-	uint output_index = (pixel_coords.y * ((800 / misc_vars.tile_size) + 1) + pixel_coords.x) * MAX_LIGHTCUT_SIZE;
+	uint output_index = (pixel_coords.y * ((misc_vars.screen_size.x / misc_vars.tile_size) + 1) + pixel_coords.x) * MAX_LIGHTCUT_SIZE;
 
 	vec3 pos = texture(g_position, sampler_coords).xyz;
 	vec3 norm = texture(g_normal, sampler_coords).xyz;
