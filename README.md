@@ -8,12 +8,16 @@ The repo exclusively uses OpenGL for it's graphics API.
 
 ## Setting up
 
+Requires C++20 (g++10 for linux) and tbb on linux.
+
 The repo should be buildable on both Windows and Linux, however it is untested on Linux. To build with CMake:
 
 ```
 git clone https://github.com/Cascades/many_lights.git
 cd many_lights
+git submodule update --init --recursive
 mkdir build
+cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=[location_to_install] -GNinja
 cmake --build .
 cmake --install .
