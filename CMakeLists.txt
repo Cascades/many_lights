@@ -7,6 +7,12 @@ project (many_lights)
 
 set(CMAKE_CXX_STANDARD 20)
 
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 10.0)
+    message(FATAL_ERROR "Insufficient gcc version")
+  endif()
+endif()
+
 if (MSVC)
     add_compile_options(/W4)
 else()

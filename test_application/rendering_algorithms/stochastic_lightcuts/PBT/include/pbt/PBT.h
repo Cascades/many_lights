@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <iomanip>
 #include <execution>
-#include <ranges>
 
 #include "glm/glm.hpp"
 

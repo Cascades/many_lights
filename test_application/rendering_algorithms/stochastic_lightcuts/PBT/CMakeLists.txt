@@ -6,6 +6,7 @@ target_include_directories(rendering_algorithms_PBT INTERFACE
 
 target_link_libraries(rendering_algorithms_PBT INTERFACE
 	ML::ML
+	$<$<PLATFORM_ID:Linux>:tbb>
 )
 
 add_library(TestApplication::RenderingAlgorithms::StochasticLightCuts::PBT ALIAS rendering_algorithms_PBT)

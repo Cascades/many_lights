@@ -19,3 +19,6 @@
 [submodule "VPL_gen/third_party/nanort"]
 	path = VPL_gen/third_party/nanort
 	url = https://github.com/lighttransport/nanort.git
+[submodule "test_application/third_party/FindTBB"]
+	path = test_application/third_party/FindTBB
+	url = https://github.com/justusc/FindTBB.git
