@@ -1,8 +1,8 @@
 #version 460
 
-#define MAX_LIGHTCUT_SIZE 100
+#define MAX_LIGHTCUT_SIZE 400
 
-layout(local_size_x = 1, local_size_y = 1) in;
+layout(local_size_x = 32, local_size_y = 32) in;
 uniform sampler2D g_position;
 uniform sampler2D g_normal;
 uniform sampler2D g_diff_spec;
@@ -248,6 +248,11 @@ float hash1(uint n)
 void main()
 {
 	uvec2 pixel_coords = uvec2(gl_GlobalInvocationID.xy);
+
+	if (any(greaterThanEqual(pixel_coords, misc_vars.screen_size)))
+	{
+		return;
+	}
 
 	vec2 top_left_of_tile = vec2(pixel_coords * misc_vars.tile_size);
 

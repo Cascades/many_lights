@@ -1,10 +1,15 @@
 #pragma once
+#ifndef NDEBUG
 #define GTEST_LANG_CXX11 1
 #define _HAS_TR1_NAMESPACE 1
+#endif
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 #include <memory>
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
 
 #include "glm/gtc/type_ptr.hpp"
 #include "many_lights/camera.h"
@@ -27,6 +32,21 @@ MessageCallback(GLenum source,
     fprintf(stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
         (type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""),
         type, severity, message);
+}
+
+inline void saveImage(const char* filepath, GLFWwindow* w) {
+    int width, height;
+    glfwGetFramebufferSize(w, &width, &height);
+    GLsizei nrChannels = 3;
+    GLsizei stride = nrChannels * width;
+    stride += (stride % 4) ? (4 - stride % 4) : 0;
+    GLsizei bufferSize = stride * height;
+    std::vector<char> buffer(bufferSize);
+    glPixelStorei(GL_PACK_ALIGNMENT, 4);
+    glReadBuffer(GL_FRONT);
+    glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, buffer.data());
+    stbi_flip_vertically_on_write(true);
+    stbi_write_png(filepath, width, height, nrChannels, buffer.data(), stride);
 }
 
 namespace ml
@@ -178,7 +198,7 @@ namespace ml
         	// being benchmarking if required
             bm.begin_if_primed();
         	// render scene using user algorithm
-            current_algorithm->render(*scene);
+            current_algorithm->render(*scene, window.get_window());
 
             /*scene->lights->sphereShader.use();
 
@@ -200,6 +220,15 @@ namespace ml
 
         	// swap frames
             window.swap_buffers();
+
+            if(user_interface.take_image)
+            {
+                char file_name[] = "snapshot.png";
+            	
+                saveImage(file_name, window.get_window());
+                user_interface.take_image = false;
+            }
+        	
             glfwPollEvents();
         }
 

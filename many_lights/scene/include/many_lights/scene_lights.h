@@ -134,6 +134,22 @@ namespace ml
         {
             const auto t1 = std::chrono::high_resolution_clock::now();
 
+            x_bounds = glm::vec2(0.0f);
+            y_bounds = glm::vec2(0.0f);
+            z_bounds = glm::vec2(0.0f);
+
+            min_bounds = glm::vec4(0.0f);
+            max_bounds = glm::vec4(0.0f);
+
+            std::fill(lights.begin(), lights.end(), Light{});
+            std::fill(light_colors.begin(), light_colors.end(), glm::vec4{});
+
+            //lights[light_index].color = glm::vec4(glm::vec3(1.0, 1.0, 1.0), 1.0) * (1.0f / static_cast<float>(num_lights));
+            //light_colors[light_index] = glm::vec4(glm::vec3(1.0, 1.0, 1.0), 1.0) * (1.0f / static_cast<float>(num_lights));
+
+            std::fill(light_model_matrices.begin(), light_model_matrices.end(), glm::mat4{1.0});
+            std::fill(light_model_positions.begin(), light_model_positions.end(), glm::vec4{});
+        	
             std::ifstream infile("my_file.txt");
         	
             for (uint32_t light_index = 0; light_index < num_lights; ++light_index)
@@ -340,6 +356,18 @@ namespace ml
                 throw std::runtime_error("num_lights > max_lights");
             }
             num_lights = new_num_lights;
+            calculate_lighting();
+            ubo_light_block.bind();
+            ubo_light_block.buffer_sub_data(0, size_bytes(), data());
+            ubo_light_block.unbind();
+
+            glBindBuffer(GL_ARRAY_BUFFER, sphereMatrixVBO);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * max_lights, &light_model_positions[0], GL_STATIC_DRAW);
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+            glBindBuffer(GL_ARRAY_BUFFER, sphereColorVBO);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * max_lights, &light_colors[0], GL_STATIC_DRAW);
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
         }
 
         constexpr size_t get_max_lights() const noexcept

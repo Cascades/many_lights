@@ -18,9 +18,10 @@ target_link_libraries(many_lights PUBLIC
 	ML::Scene
 	ML::Colors
 	ML::UI
+	stb::stb
 )
 
-target_compile_definitions(many_lights PUBLIC NOMINMAX _HAS_TR1_NAMESPACE)
+target_compile_definitions(many_lights PUBLIC NOMINMAX)
 
 add_library(ML::ML ALIAS many_lights)
 

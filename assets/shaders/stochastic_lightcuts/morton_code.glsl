@@ -1,6 +1,6 @@
 #version 460
 
-layout(local_size_x = 1, local_size_y = 1) in;
+layout(local_size_x = 128, local_size_y = 1) in;
 
 layout(std430) buffer;
 
@@ -67,7 +67,22 @@ uint get_morton_code(in float x, in float y, in float z)
 
 void main()
 {
-    uint curr_index = gl_GlobalInvocationID.x;
+    uvec3 total_invocation_grid = gl_NumWorkGroups * gl_WorkGroupSize;
+    uint total_invocation_grid_size = uint(dot(total_invocation_grid, uvec3(1)));
+
+    uint curr_index =
+        (gl_GlobalInvocationID.z * total_invocation_grid.x * total_invocation_grid.y +
+            gl_GlobalInvocationID.y * total_invocation_grid.x +
+            gl_GlobalInvocationID.x);
+
+    if (curr_index > morton_ssbo.morton_index_code.length() - 1)
+    {
+        return;
+    }
+
+    //uint curr_index = gl_GlobalInvocationID.x;
+
+    vec4 curr_pos = lights.lights[curr_index].position;
 
     // get size of root bounding box
     float x_dist = morton_vars.max_bound.x - morton_vars.min_bound.x;
@@ -77,9 +92,9 @@ void main()
     //morton_ssbo.morton_index_code[curr_index * 2] = curr_index;
     if (lights.lights[curr_index].color.r + lights.lights[curr_index].color.g + lights.lights[curr_index].color.b != 0.0)
     {
-        morton_ssbo.morton_index_code[curr_index].x = get_morton_code((lights.lights[curr_index].position.x - morton_vars.min_bound.x) / x_dist,
-            (lights.lights[curr_index].position.y - morton_vars.min_bound.y) / y_dist,
-            (lights.lights[curr_index].position.z - morton_vars.min_bound.z) / z_dist);
+        morton_ssbo.morton_index_code[curr_index].x = get_morton_code((curr_pos.x - morton_vars.min_bound.x) / x_dist,
+            (curr_pos.y - morton_vars.min_bound.y) / y_dist,
+            (curr_pos.z - morton_vars.min_bound.z) / z_dist);
     }
     else
     {
@@ -88,7 +103,7 @@ void main()
 
     morton_ssbo.morton_index_code[curr_index].y = curr_index;
 
-    input_ssbo.pbt[(input_ssbo.pbt.length() / 2) + curr_index] = PBTNode(PBTBoundingBox(lights.lights[curr_index].position, lights.lights[curr_index].position), vec4(dot(vec3(1.0), lights.lights[curr_index].color.xyz)), ivec4(curr_index));
+    input_ssbo.pbt[(input_ssbo.pbt.length() / 2) + curr_index] = PBTNode(PBTBoundingBox(curr_pos, curr_pos), vec4(dot(vec3(1.0), lights.lights[curr_index].color.xyz)), ivec4(curr_index));
 
    // morton_ssbo.morton_index_code[curr_index] = curr_index;
 

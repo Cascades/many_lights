@@ -19,7 +19,7 @@ namespace ml
 		virtual void init([[maybe_unused]] int const& width, [[maybe_unused]] int const& height, [[maybe_unused]] ml::Scene<max_lights> const& scene) = 0;
 		//virtual void init([[maybe_unused]] int const& width, [[maybe_unused]] int const& height) = 0;
 		virtual void adjust_size([[maybe_unused]] int const& width, [[maybe_unused]] int const& height) = 0;
-		virtual void render(ml::Scene<max_lights>& scene) = 0;
+		virtual void render(ml::Scene<max_lights>& scene, GLFWwindow* window) = 0;
 
 		virtual std::string get_name() const = 0;
 

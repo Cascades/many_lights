@@ -1,7 +1,7 @@
 #version 460 core
 
 #define MAX_LIGHTS 200
-#define MAX_LIGHTCUT_SIZE 100
+#define MAX_LIGHTCUT_SIZE 400
 
 out vec4 FragColor;
 
@@ -32,16 +32,16 @@ struct PBTNode
     ivec4 original_index;
 };
 
-layout(binding = 0) buffer InputSSBO {
+layout(binding = 0) readonly buffer InputSSBO {
     // CHANGE 
 	PBTNode pbt[];
 } input_ssbo;
 
-layout(binding = 1) buffer LightcutsSSBO {
+layout(binding = 1) readonly buffer LightcutsSSBO {
 	int lightcuts[];
 } lightcuts_ssbo;
 
-layout(binding = 2) buffer MiscSSBO {
+layout(binding = 2) readonly buffer MiscSSBO {
 	vec4 viewPos;
     uvec2 screen_size;
     int iFrame;
@@ -54,7 +54,7 @@ layout(binding = 3) buffer GridCellDebug {
 	int lightcuts[];
 } grid_cell_debug;
 
-layout (binding = 4) buffer Lights {
+layout (binding = 4) readonly buffer Lights {
     Light lights[];
 } lights;
 
@@ -98,21 +98,24 @@ float get_max_distance_squared(in vec3 shading_point, in int pbt_index)
 
     float max_dist = 0;
 
-	float cands[8];
+	//float cands[8];
 
-	cands[0] = get_distance_squared(shading_point, normalize(vec3(input_ssbo.pbt[pbt_index].bb.min_bounds.x, input_ssbo.pbt[pbt_index].bb.min_bounds.y, input_ssbo.pbt[pbt_index].bb.min_bounds.z)));
-	cands[1] = get_distance_squared(shading_point, normalize(vec3(input_ssbo.pbt[pbt_index].bb.min_bounds.x, input_ssbo.pbt[pbt_index].bb.min_bounds.y, input_ssbo.pbt[pbt_index].bb.max_bounds.z)));
-	cands[2] = get_distance_squared(shading_point, normalize(vec3(input_ssbo.pbt[pbt_index].bb.min_bounds.x, input_ssbo.pbt[pbt_index].bb.max_bounds.y, input_ssbo.pbt[pbt_index].bb.min_bounds.z)));
-	cands[3] = get_distance_squared(shading_point, normalize(vec3(input_ssbo.pbt[pbt_index].bb.min_bounds.x, input_ssbo.pbt[pbt_index].bb.max_bounds.y, input_ssbo.pbt[pbt_index].bb.max_bounds.z)));
-	cands[4] = get_distance_squared(shading_point, normalize(vec3(input_ssbo.pbt[pbt_index].bb.max_bounds.x, input_ssbo.pbt[pbt_index].bb.min_bounds.y, input_ssbo.pbt[pbt_index].bb.min_bounds.z)));
-	cands[5] = get_distance_squared(shading_point, normalize(vec3(input_ssbo.pbt[pbt_index].bb.max_bounds.x, input_ssbo.pbt[pbt_index].bb.min_bounds.y, input_ssbo.pbt[pbt_index].bb.max_bounds.z)));
-	cands[6] = get_distance_squared(shading_point, normalize(vec3(input_ssbo.pbt[pbt_index].bb.max_bounds.x, input_ssbo.pbt[pbt_index].bb.max_bounds.y, input_ssbo.pbt[pbt_index].bb.min_bounds.z)));
-	cands[7] = get_distance_squared(shading_point, normalize(vec3(input_ssbo.pbt[pbt_index].bb.max_bounds.x, input_ssbo.pbt[pbt_index].bb.max_bounds.y, input_ssbo.pbt[pbt_index].bb.max_bounds.z)));
+    vec3 min_bounds = input_ssbo.pbt[pbt_index].bb.min_bounds.xyz;
+    vec3 max_bounds = input_ssbo.pbt[pbt_index].bb.max_bounds.xyz;
 
-	for (int local_index = 0; local_index < 8; ++local_index)
-	{
-		max_dist = max(max_dist, cands[local_index]);
-	}
+	max_dist =  max(max_dist, get_distance_squared(shading_point, normalize(vec3(min_bounds.x, min_bounds.y, min_bounds.z))));
+	max_dist =  max(max_dist, get_distance_squared(shading_point, normalize(vec3(min_bounds.x, min_bounds.y, max_bounds.z))));
+	max_dist =  max(max_dist, get_distance_squared(shading_point, normalize(vec3(min_bounds.x, max_bounds.y, min_bounds.z))));
+	max_dist =  max(max_dist, get_distance_squared(shading_point, normalize(vec3(min_bounds.x, max_bounds.y, max_bounds.z))));
+	max_dist =  max(max_dist, get_distance_squared(shading_point, normalize(vec3(max_bounds.x, min_bounds.y, min_bounds.z))));
+	max_dist =  max(max_dist, get_distance_squared(shading_point, normalize(vec3(max_bounds.x, min_bounds.y, max_bounds.z))));
+	max_dist =  max(max_dist, get_distance_squared(shading_point, normalize(vec3(max_bounds.x, max_bounds.y, min_bounds.z))));
+	max_dist =  max(max_dist, get_distance_squared(shading_point, normalize(vec3(max_bounds.x, max_bounds.y, max_bounds.z))));
+
+	//for (int local_index = 0; local_index < 8; ++local_index)
+	//{
+	//	max_dist = max(max_dist, cands[local_index]);
+	//}
 
     return max_dist;
 }
@@ -157,21 +160,14 @@ float mat_term(in int pbt_light_index, in vec3 shading_pos, in vec3 shading_ambi
 	// diffuse0
 	float diff = 0;
 
-	float cands[8];
-
-	cands[0] = dot(shading_normal, normalize(vec3(input_ssbo.pbt[pbt_light_index].bb.min_bounds.x, input_ssbo.pbt[pbt_light_index].bb.min_bounds.y, input_ssbo.pbt[pbt_light_index].bb.min_bounds.z) - shading_pos));
-	cands[1] = dot(shading_normal, normalize(vec3(input_ssbo.pbt[pbt_light_index].bb.min_bounds.x, input_ssbo.pbt[pbt_light_index].bb.min_bounds.y, input_ssbo.pbt[pbt_light_index].bb.max_bounds.z) - shading_pos));
-	cands[2] = dot(shading_normal, normalize(vec3(input_ssbo.pbt[pbt_light_index].bb.min_bounds.x, input_ssbo.pbt[pbt_light_index].bb.max_bounds.y, input_ssbo.pbt[pbt_light_index].bb.min_bounds.z) - shading_pos));
-	cands[3] = dot(shading_normal, normalize(vec3(input_ssbo.pbt[pbt_light_index].bb.min_bounds.x, input_ssbo.pbt[pbt_light_index].bb.max_bounds.y, input_ssbo.pbt[pbt_light_index].bb.max_bounds.z) - shading_pos));
-	cands[4] = dot(shading_normal, normalize(vec3(input_ssbo.pbt[pbt_light_index].bb.min_bounds.x, input_ssbo.pbt[pbt_light_index].bb.min_bounds.y, input_ssbo.pbt[pbt_light_index].bb.min_bounds.z) - shading_pos));
-	cands[5] = dot(shading_normal, normalize(vec3(input_ssbo.pbt[pbt_light_index].bb.min_bounds.x, input_ssbo.pbt[pbt_light_index].bb.min_bounds.y, input_ssbo.pbt[pbt_light_index].bb.max_bounds.z) - shading_pos));
-	cands[6] = dot(shading_normal, normalize(vec3(input_ssbo.pbt[pbt_light_index].bb.min_bounds.x, input_ssbo.pbt[pbt_light_index].bb.max_bounds.y, input_ssbo.pbt[pbt_light_index].bb.min_bounds.z) - shading_pos));
-	cands[7] = dot(shading_normal, normalize(vec3(input_ssbo.pbt[pbt_light_index].bb.min_bounds.x, input_ssbo.pbt[pbt_light_index].bb.max_bounds.y, input_ssbo.pbt[pbt_light_index].bb.max_bounds.z) - shading_pos));
-
-	for (int local_index = 0; local_index < 8; ++local_index)
-	{
-		diff = max(diff, cands[local_index]);
-	}
+	diff = max(diff, dot(shading_normal, normalize(vec3(input_ssbo.pbt[pbt_light_index].bb.min_bounds.x, input_ssbo.pbt[pbt_light_index].bb.min_bounds.y, input_ssbo.pbt[pbt_light_index].bb.min_bounds.z) - shading_pos)));
+	diff = max(diff, dot(shading_normal, normalize(vec3(input_ssbo.pbt[pbt_light_index].bb.min_bounds.x, input_ssbo.pbt[pbt_light_index].bb.min_bounds.y, input_ssbo.pbt[pbt_light_index].bb.max_bounds.z) - shading_pos)));
+	diff = max(diff, dot(shading_normal, normalize(vec3(input_ssbo.pbt[pbt_light_index].bb.min_bounds.x, input_ssbo.pbt[pbt_light_index].bb.max_bounds.y, input_ssbo.pbt[pbt_light_index].bb.min_bounds.z) - shading_pos)));
+	diff = max(diff, dot(shading_normal, normalize(vec3(input_ssbo.pbt[pbt_light_index].bb.min_bounds.x, input_ssbo.pbt[pbt_light_index].bb.max_bounds.y, input_ssbo.pbt[pbt_light_index].bb.max_bounds.z) - shading_pos)));
+	diff = max(diff, dot(shading_normal, normalize(vec3(input_ssbo.pbt[pbt_light_index].bb.min_bounds.x, input_ssbo.pbt[pbt_light_index].bb.min_bounds.y, input_ssbo.pbt[pbt_light_index].bb.min_bounds.z) - shading_pos)));
+	diff = max(diff, dot(shading_normal, normalize(vec3(input_ssbo.pbt[pbt_light_index].bb.min_bounds.x, input_ssbo.pbt[pbt_light_index].bb.min_bounds.y, input_ssbo.pbt[pbt_light_index].bb.max_bounds.z) - shading_pos)));
+	diff = max(diff, dot(shading_normal, normalize(vec3(input_ssbo.pbt[pbt_light_index].bb.min_bounds.x, input_ssbo.pbt[pbt_light_index].bb.max_bounds.y, input_ssbo.pbt[pbt_light_index].bb.min_bounds.z) - shading_pos)));
+	diff = max(diff, dot(shading_normal, normalize(vec3(input_ssbo.pbt[pbt_light_index].bb.min_bounds.x, input_ssbo.pbt[pbt_light_index].bb.max_bounds.y, input_ssbo.pbt[pbt_light_index].bb.max_bounds.z) - shading_pos)));
 	
 	vec3 diffuse = diff * (input_ssbo.pbt[pbt_light_index].total_intensity.x / 3.0) * shading_diffuse;
 
@@ -221,27 +217,6 @@ int sample_node(in int node_index, inout int seed, in vec3 shading_pos, in vec3 
         int right_child_index = get_right_child_index(current_index);
 
         const float dead_node_value = 0.0;
-
-        //float dead_node_mult = step(0.5, intensity(left_child_index) + intensity(right_child_index));
-
-        /*if(intensity(left_child_index) == dead_node_value)
-        {
-            if(intensity(right_child_index) == dead_node_value)
-            {
-                break;
-            }
-            current_index = right_child_index;
-            continue;
-        }
-        else if(intensity(right_child_index) == dead_node_value)
-        {
-            if(intensity(left_child_index) == dead_node_value)
-            {
-                break;
-            }
-            current_index = left_child_index;
-            continue;
-        }*/
 
         float ref_bound_and_intense_l = reflectance_bound(left_child_index, shading_pos, shading_ambient, shading_diffuse, shading_specular, shading_normal) * intensity(left_child_index);
         float ref_bound_and_intense_r = reflectance_bound(right_child_index, shading_pos, shading_ambient, shading_diffuse, shading_specular, shading_normal) * intensity(right_child_index);
@@ -324,26 +299,37 @@ void main()
 
     ivec2 grid_coord = ivec2(screen_coord / float(misc_vars.tile_size));
 
-    int final_light_indices[MAX_LIGHTCUT_SIZE];
+    //int final_light_indices[MAX_LIGHTCUT_SIZE];
 
-    for(int dummy = 0; dummy < MAX_LIGHTCUT_SIZE; ++dummy)
-    {
-        final_light_indices[dummy] = -1;
-    }
+    //for(int dummy = 0; dummy < MAX_LIGHTCUT_SIZE; ++dummy)
+    //{
+    //    final_light_indices[dummy] = -1;
+    //}
+
+    // ------------------ make constant? ------------------------
+
+    vec3 position = texture(g_position, TexCoords).rgb;
+    vec3 ambient_t = texture(g_ambient, TexCoords).rgb;
+    // ------------------ switch to vec4? -----------------------
+    vec3 diffuse_t = texture(g_diff_spec, TexCoords).rgb;
+    float specular_t = texture(g_diff_spec, TexCoords).a;
+    vec3 normal_t = texture(g_normal, TexCoords).rgb;
+
+    int lightcut_block = int((grid_coord.y * ((misc_vars.screen_size.x / misc_vars.tile_size) + 1) + grid_coord.x) * MAX_LIGHTCUT_SIZE);
 
     for(int cut_index = 0; cut_index < misc_vars.lightcuts_size; ++cut_index)
     {
         atomicCounterIncrement(lighting_comps);
 
-        int light_index = lightcuts_ssbo.lightcuts[((grid_coord.y * ((misc_vars.screen_size.x / misc_vars.tile_size) + 1) + grid_coord.x) * MAX_LIGHTCUT_SIZE) + cut_index];
+        int light_index = lightcuts_ssbo.lightcuts[lightcut_block + cut_index];
 
-        int sampled_index = sample_node(light_index, seed, texture(g_position, TexCoords).rgb, texture(g_ambient, TexCoords).rgb, texture(g_diff_spec, TexCoords).rgb, texture(g_diff_spec, TexCoords).a, texture(g_normal, TexCoords).rgb);
+        int sampled_index = sample_node(light_index, seed, position, ambient, diffuse, specular_t, normal_t);
 
         int final_light_index = input_ssbo.pbt[sampled_index].original_index.r;
 
-        final_light_indices[cut_index * 3] = light_index;
-        final_light_indices[cut_index * 3 + 1] = sampled_index;
-        final_light_indices[cut_index * 3 + 2] = final_light_index;
+        //final_light_indices[cut_index * 3] = light_index;
+        //final_light_indices[cut_index * 3 + 1] = sampled_index;
+        //final_light_indices[cut_index * 3 + 2] = final_light_index;
 
         vec3 light_col = lights.lights[final_light_index].color.rgb;
 
@@ -360,17 +346,17 @@ void main()
         attenuation = 1.0 / (1.0 + a*dist + b*dist*dist);
 
         // ambient0
-        ambient = ambientStrength * light_col * texture(g_ambient, TexCoords).rgb;
+        ambient = ambientStrength * light_col * ambient_t;
   	
         // diffuse0
         lightDir = normalize(lights.lights[final_light_index].position.xyz - FragPos);
         diff = max(dot(norm, lightDir), 0.0);
-        diffuse = diff * light_col * texture(g_diff_spec, TexCoords).rgb;
+        diffuse = diff * light_col * diffuse_t.rgb;
     
         // specular0
         reflectDir = reflect(-lightDir, norm);  
         spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
-        specular = specularStrength * spec * light_col * vec3(texture(g_diff_spec, TexCoords).a);
+        specular = specularStrength * spec * light_col * vec3(specular_t);
 
         vec3 light_sum = ambient + diffuse + specular;
 

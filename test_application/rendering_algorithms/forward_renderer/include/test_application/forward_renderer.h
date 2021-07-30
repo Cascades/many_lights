@@ -34,7 +34,7 @@ namespace TestApplication
 
 		void adjust_size([[maybe_unused]] int const& width, [[maybe_unused]] int const& height) override;
 
-		void render(ml::Scene<max_lights>& scene) override;
+		void render(ml::Scene<max_lights>& scene, GLFWwindow* window) override;
 
 		std::string get_name() const override
 		{
@@ -107,7 +107,7 @@ namespace TestApplication
 	}
 
 	template<size_t max_lights>
-	void ForwardBlinnPhong<max_lights>::render(ml::Scene<max_lights>& scene)
+	void ForwardBlinnPhong<max_lights>::render(ml::Scene<max_lights>& scene, GLFWwindow* window)
 	{
 		glEnable(GL_DEPTH_TEST);
 

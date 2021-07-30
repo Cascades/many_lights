@@ -14,6 +14,8 @@ namespace TestApplication
 	private:
 		ml::Shader forward_blinn_phong;
 
+		bool vpls_on = false;
+
 	public:
 		VPLDebug() = default;
 		
@@ -27,7 +29,7 @@ namespace TestApplication
 
 		void adjust_size([[maybe_unused]] int const& width, [[maybe_unused]] int const& height) override;
 
-		void render(ml::Scene<max_lights>& scene) override;
+		void render(ml::Scene<max_lights>& scene, GLFWwindow* window) override;
 
 		std::string get_name() const override
 		{
@@ -35,7 +37,9 @@ namespace TestApplication
 		}
 
 		void ui(bool const& num_lights_changed, bool const& light_heights_changed, std::shared_ptr<ml::Scene<max_lights>> scene) override
-		{}
+		{
+			ImGui::Checkbox("VPLs On", &vpls_on);
+		}
 	};
 
 	template<size_t max_lights>
@@ -73,7 +77,7 @@ namespace TestApplication
 	}
 
 	template<size_t max_lights>
-	void VPLDebug<max_lights>::render(ml::Scene<max_lights>& scene)
+	void VPLDebug<max_lights>::render(ml::Scene<max_lights>& scene, GLFWwindow* window)
 	{
 		glEnable(GL_DEPTH_TEST);
 
@@ -92,16 +96,19 @@ namespace TestApplication
 			model.draw(forward_blinn_phong);
 		}
 
-		scene.lights->sphereShader.use();
+		if (vpls_on)
+		{
+			scene.lights->sphereShader.use();
 
-		scene.lights->sphereShader.set_mat_4x4_floatv("model", 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
-		scene.lights->sphereShader.set_mat_4x4_floatv("view", 1, GL_FALSE, glm::value_ptr(scene.camera->GetViewMatrix()));
-		scene.lights->sphereShader.set_mat_4x4_floatv("projection", 1, GL_FALSE, glm::value_ptr(scene.camera->projection_matrix));
+			scene.lights->sphereShader.set_mat_4x4_floatv("model", 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
+			scene.lights->sphereShader.set_mat_4x4_floatv("view", 1, GL_FALSE, glm::value_ptr(scene.camera->GetViewMatrix()));
+			scene.lights->sphereShader.set_mat_4x4_floatv("projection", 1, GL_FALSE, glm::value_ptr(scene.camera->projection_matrix));
 
-		glBindVertexArray(scene.lights->sphereVAO);
-		//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, scene->lights->sphereEBO);
-		glDrawElementsInstanced(GL_TRIANGLES, scene.lights->sphere.get_meshes()[0].indices.size(), GL_UNSIGNED_INT, nullptr, scene.lights->get_num_lights());
+			glBindVertexArray(scene.lights->sphereVAO);
+			//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, scene->lights->sphereEBO);
+			glDrawElementsInstanced(GL_TRIANGLES, scene.lights->sphere.get_meshes()[0].indices.size(), GL_UNSIGNED_INT, nullptr, scene.lights->get_num_lights());
 
-		glBindVertexArray(0);
+			glBindVertexArray(0);
+		}
 	}
 }

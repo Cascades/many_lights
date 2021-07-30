@@ -1,6 +1,7 @@
 #pragma once
 
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
@@ -16,6 +17,9 @@ namespace ml
 		~UI() = default;
 
         int current_index;
+
+        bool take_image = false;
+        bool full_range_test = false;
 
         bool num_lights_changed = false;
         bool light_heights_changed = false;
@@ -46,6 +50,21 @@ namespace ml
             //int power_of_lights = lights.light_power;
             int int_num_lights = lights.get_num_lights();
 			// have to use int for imgui
+
+            /*if (full_range_test)
+            {
+                ImGui::PushDisabled();
+            }*/
+			
+            if (ImGui::Button("Take Image"))
+            {
+                take_image = true;
+            }
+            /*if (full_range_test)
+            {
+                ImGui::PopDisabled();
+            }*/
+
             if (ImGui::SliderInt("num_lights", &int_num_lights, 0, lights.get_max_lights()))
             {
                 num_lights_changed = true;

@@ -49,6 +49,18 @@ namespace TestApplication
 		ml::Shader bitonic_sort_shader;
 		ml::Shader internal_node_shader;
 
+		bool full_range_test = false;
+		bool first_range_test = false;
+
+		unsigned int morton_time_query;
+		unsigned int bitonic_sort_time_query;
+		unsigned int internal_construction_time_query;
+		unsigned int geometry_pass_time_query;
+		unsigned int cut_generation_time_query;
+		unsigned int shading_pass_time_query;
+		uint64_t query_result;
+		size_t iteration_counter = 0;
+
 		unsigned int lighting_comp_atomic;
 		unsigned int g_buffer;
 		unsigned int g_position, g_normal, g_diff_spec, g_ambient;
@@ -84,7 +96,7 @@ namespace TestApplication
 
 		void adjust_size(int const& width, int const& height) override;
 
-		void render(ml::Scene<max_lights>& scene) override;
+		void render(ml::Scene<max_lights>& scene, GLFWwindow* window) override;
 
 		std::string get_name() const override
 		{
@@ -98,6 +110,18 @@ namespace TestApplication
 template<size_t max_lights, size_t max_lightcuts_size, int32_t max_tile_size>
 void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_tile_size>::init(int const& width, int const& height, ml::Scene<max_lights> const& scene)
 {
+	std::ofstream logging_file;
+	logging_file.open("stochastic_log.csv");
+	logging_file << "Frame, Mode, Light Cut Size, Tile Size, Number of Lights, Morton Time (ms), Bitonic Time (ms), Contruction Time (ms), Geo Pass Time (ms), Cut Gen Time (ms), Shading Pass Time (ms), Total Time (ms), Possible FPS\n";
+	logging_file.close();
+
+	glGenQueries(1, &morton_time_query);
+	glGenQueries(1, &bitonic_sort_time_query);
+	glGenQueries(1, &internal_construction_time_query);
+	glGenQueries(1, &geometry_pass_time_query);
+	glGenQueries(1, &cut_generation_time_query);
+	glGenQueries(1, &shading_pass_time_query);
+	
 	int workGroupSizes[3] = { 0 };
 	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &workGroupSizes[0]);
 	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 1, &workGroupSizes[1]);
@@ -107,8 +131,8 @@ void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_ti
 	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 1, &workGroupCounts[1]);
 	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 2, &workGroupCounts[2]);
 	
-	std::cout << "GL_MAX_COMPUTE_WORK_GROUP_SIZE: " << workGroupSizes[0] << ", " << workGroupSizes[1] << ", " << workGroupSizes[2] << std::endl;
-	std::cout << "GL_MAX_COMPUTE_WORK_GROUP_COUNT: " << workGroupCounts[0] << ", " << workGroupCounts[1] << ", " << workGroupCounts[2] << std::endl;
+	std::cout << "GL_MAX_COMPUTE_WORK_GROUP_SIZE: " << workGroupSizes[0] << "," << workGroupSizes[1] << "," << workGroupSizes[2] << std::endl;
+	std::cout << "GL_MAX_COMPUTE_WORK_GROUP_COUNT: " << workGroupCounts[0] << "," << workGroupCounts[1] << "," << workGroupCounts[2] << std::endl;
 	
 	lightcuts_size = 6;
 
@@ -340,6 +364,14 @@ void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_ti
 
 	ImGui::Text("lighting computations = %d", counter_val);
 	glMemoryBarrier(GL_ATOMIC_COUNTER_BARRIER_BIT);
+
+	if (ImGui::Button("Full Range Test"))
+	{
+		full_range_test = true;
+		lightcuts_size = 0;
+		tile_size = min_tile_size;
+		scene->lights->set_num_lights(0);
+	}
 }
 
 template<size_t max_lights, size_t max_lightcuts_size, int32_t max_tile_size>
@@ -386,7 +418,7 @@ void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_ti
 }
 
 template<size_t max_lights, size_t max_lightcuts_size, int32_t max_tile_size>
-void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_tile_size>::render(ml::Scene<max_lights>& scene)
+void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_tile_size>::render(ml::Scene<max_lights>& scene, GLFWwindow* window)
 {
 	glEnable(GL_DEPTH_TEST);
 	glBindFramebuffer(GL_FRAMEBUFFER, g_buffer);
@@ -405,7 +437,9 @@ void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_ti
 		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 		
 		morton_code_shader.use(); // Compute shader program.
-		glDispatchCompute(std::bit_ceil(scene.lights->get_max_lights()), 1, 1);
+		glBeginQuery(GL_TIME_ELAPSED, morton_time_query);
+		glDispatchCompute((std::bit_ceil(scene.lights->get_max_lights()) / 128) + 1, 1, 1);
+		glEndQuery(GL_TIME_ELAPSED);
 
 		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
@@ -418,6 +452,7 @@ void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_ti
 		//std::cout << "bit_ceil_max / 2: " << bit_ceil_max / 2 << std::endl;
 		//std::cout << "bit_ceil_max / 4: " << bit_ceil_max / 4 << std::endl;
 		
+		glBeginQuery(GL_TIME_ELAPSED, bitonic_sort_time_query);
 		for (uint32_t stage = 0; stage < static_cast<uint32_t>(std::log2(static_cast<float>(max_lights))); stage++)
 		{
 			for (uint32_t pass_num = 0; pass_num <= stage; pass_num++)
@@ -439,6 +474,7 @@ void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_ti
 				//std::cout << "=====================" << std::endl;
 			}
 		}
+		glEndQuery(GL_TIME_ELAPSED);
 
 		internal_node_shader.use();
 
@@ -446,6 +482,7 @@ void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_ti
 		
 		glNamedBufferSubData(bitonic_vars, 2 * sizeof(uint32_t), sizeof(uint32_t), &d);
 		
+		glBeginQuery(GL_TIME_ELAPSED, internal_construction_time_query);
 		for (uint32_t internal_level = static_cast<uint32_t>(std::log2(static_cast<float>(max_lights * 2 - 1))); internal_level > 0; --internal_level)
 		{
 			uint32_t actual_level = internal_level - 1;
@@ -463,7 +500,8 @@ void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_ti
 
 			glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 			//glDispatchCompute(((std::bit_ceil(max_lights) * 2 - 1) / 2) / 64, 1, 1);
-		}		
+		}
+		glEndQuery(GL_TIME_ELAPSED);
 	}
 	
 	geometry_pass_shader.use();
@@ -471,16 +509,19 @@ void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_ti
 	geometry_pass_shader.set_mat_4x4_floatv("model", 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
 	geometry_pass_shader.set_mat_4x4_floatv("view", 1, GL_FALSE, glm::value_ptr(scene.camera->GetViewMatrix()));
 	geometry_pass_shader.set_mat_4x4_floatv("projection", 1, GL_FALSE, glm::value_ptr(scene.camera->projection_matrix));
-
+	
+	glBeginQuery(GL_TIME_ELAPSED, geometry_pass_time_query);
 	for (auto& model : scene.models->get_models())
 	{
 		model.draw(geometry_pass_shader);
 	}
+	glEndQuery(GL_TIME_ELAPSED);
 
 	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+	
 	generate_cut_shader.use(); // Compute shader program.
 
 	generate_cut_shader.set_int("g_position", 0);
@@ -505,8 +546,10 @@ void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_ti
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, g_ambient);
 
-	glDispatchCompute(width / tile_size + 1, height / tile_size + 1, 1);
-
+	glBeginQuery(GL_TIME_ELAPSED, cut_generation_time_query);
+	glDispatchCompute(((width / tile_size + 1) + 31) / 32, ((height / tile_size + 1) + 31) / 32, 1);
+	glEndQuery(GL_TIME_ELAPSED);
+	
 	/////////////////////////////////////////////////
 
 	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
@@ -531,6 +574,97 @@ void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_ti
 	glBindTexture(GL_TEXTURE_2D, g_ambient);
 
 	glBindVertexArray(quadVAO);
+	glBeginQuery(GL_TIME_ELAPSED, shading_pass_time_query);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glEndQuery(GL_TIME_ELAPSED);
 	glBindVertexArray(0);
+
+	glMemoryBarrier(GL_QUERY_BUFFER_BARRIER_BIT);
+
+	double total_time = 0.0;
+	
+	std::ofstream logging_file;
+	logging_file.open("stochastic_log.csv", std::ios::app);
+	logging_file << iteration_counter << ",";
+	if (generation_type == 0)
+	{
+		logging_file << "CPU" << ",";
+	}
+	else
+	{
+		logging_file << "GPU" << ",";
+	}
+	logging_file << lightcuts_size << ",";
+	logging_file << tile_size << ",";
+	logging_file << scene.lights->get_num_lights() << ",";
+	glGetQueryObjectui64v(morton_time_query, GL_QUERY_RESULT, &query_result);
+	logging_file << static_cast<double>(query_result) / 1000000.0 << ",";
+	total_time += static_cast<double>(query_result) / 1000000.0;
+	glGetQueryObjectui64v(bitonic_sort_time_query, GL_QUERY_RESULT, &query_result);
+	logging_file << static_cast<double>(query_result) / 1000000.0 << ",";
+	total_time += static_cast<double>(query_result) / 1000000.0;
+	glGetQueryObjectui64v(internal_construction_time_query, GL_QUERY_RESULT, &query_result);
+	logging_file << static_cast<double>(query_result) / 1000000.0 << ",";
+	total_time += static_cast<double>(query_result) / 1000000.0;
+	glGetQueryObjectui64v(geometry_pass_time_query, GL_QUERY_RESULT, &query_result);
+	logging_file << static_cast<double>(query_result) / 1000000.0 << ",";
+	total_time += static_cast<double>(query_result) / 1000000.0;
+	glGetQueryObjectui64v(cut_generation_time_query, GL_QUERY_RESULT, &query_result);
+	logging_file << static_cast<double>(query_result) / 1000000.0 << ",";
+	total_time += static_cast<double>(query_result) / 1000000.0;
+	glGetQueryObjectui64v(shading_pass_time_query, GL_QUERY_RESULT, &query_result);
+	logging_file << static_cast<double>(query_result) / 1000000.0 << ",";
+	total_time += static_cast<double>(query_result) / 1000000.0;
+	logging_file << total_time << ",";
+	logging_file << 1000.0 / total_time << "\n";
+	logging_file.close();
+
+	glMemoryBarrier(GL_QUERY_BUFFER_BARRIER_BIT);
+
+	iteration_counter++;
+
+	if (full_range_test && first_range_test)
+	{
+		glMemoryBarrier(GL_ALL_BARRIER_BITS);
+		std::string file_name_str = (std::string("stochastic_screenshot_") + std::to_string(tile_size) + std::string("_") + std::to_string(lightcuts_size - 1) + std::string(".png"));
+
+		//saveImage(file_name_str.c_str(), window);
+
+		if (lightcuts_size < max_lightcuts_size)
+		{
+			lightcuts_size++;
+		}
+		else
+		{
+			if(tile_size < max_tile_size)
+			{
+				tile_size++;
+				lightcuts_size = 0;
+			}
+			else
+			{
+				if(scene.lights->get_num_lights() < max_lights)
+				{
+					scene.lights->set_num_lights(scene.lights->get_num_lights() + 250);
+					lightcuts_size = 0;
+					tile_size = min_tile_size;
+				}
+				else
+				{
+					scene.lights->set_num_lights(0);
+					lightcuts_size = 0;
+					tile_size = min_tile_size;
+					full_range_test = false;
+					first_range_test = false;
+				}
+			}
+		}
+
+		std::cout << file_name_str << std::endl;
+	}
+
+	if (!first_range_test)
+	{
+		first_range_test = true;
+	}
 }

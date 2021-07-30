@@ -30,7 +30,7 @@ namespace TestApplication
 
 		void adjust_size(int const& width, int const& height) override;
 
-		void render(ml::Scene<max_lights>& scene) override;
+		void render(ml::Scene<max_lights>& scene, GLFWwindow* window) override;
 
 		std::string get_name() const override
 		{
@@ -190,7 +190,7 @@ namespace TestApplication
 	}
 
 	template<size_t max_lights>
-	void Deferred<max_lights>::render(ml::Scene<max_lights>& scene)
+	void Deferred<max_lights>::render(ml::Scene<max_lights>& scene, GLFWwindow* window)
 	{
 		glEnable(GL_DEPTH_TEST);
 		glBindFramebuffer(GL_FRAMEBUFFER, g_buffer);

@@ -16,6 +16,7 @@ int main()
     many_lights->add_model("../assets/sponza/sponza.obj");
     many_lights->set_lights(20, 3.0f);
 
+	std::cout << "started" << std::endl;
     std::vector<float> vertices;
     std::vector<unsigned int> indices;
 
@@ -88,7 +89,7 @@ int main()
 	points.push_back(org_value.g);
 	points.push_back(org_value.b);
 	
-	while (points.size() < 6 * 100000)
+	while (points.size() < 6 * 20000)
 	{
 		org = glm::vec3(0.0f, 500.0f, 0.0f);
 
