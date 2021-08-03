@@ -49,6 +49,8 @@ namespace TestApplication
 		ml::Shader bitonic_sort_shader;
 		ml::Shader internal_node_shader;
 
+		GLuint counter_val;
+
 		bool full_range_test = false;
 		bool first_range_test = false;
 
@@ -112,7 +114,7 @@ void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_ti
 {
 	std::ofstream logging_file;
 	logging_file.open("stochastic_log.csv");
-	logging_file << "Frame, Mode, Light Cut Size, Tile Size, Number of Lights, Morton Time (ms), Bitonic Time (ms), Contruction Time (ms), Geo Pass Time (ms), Cut Gen Time (ms), Shading Pass Time (ms), Total Time (ms), Possible FPS\n";
+	logging_file << "Frame, Mode, Light Cut Size, Tile Size, Number of Lights, Morton Time (ms), Bitonic Time (ms), Contruction Time (ms), Geo Pass Time (ms), Cut Gen Time (ms), Shading Pass Time (ms), Total Time (ms), Possible FPS, Light Computations\n";
 	logging_file.close();
 
 	glGenQueries(1, &morton_time_query);
@@ -351,7 +353,7 @@ void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_ti
 		sizeof(GLuint),
 		GL_MAP_READ_BIT
 	);
-	GLuint counter_val = *userCounters;
+	counter_val = *userCounters;
 	glUnmapNamedBuffer(lighting_comp_atomic);
 
 	userCounters = (GLuint*)glMapNamedBufferRange(lighting_comp_atomic,
@@ -616,7 +618,8 @@ void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_ti
 	logging_file << static_cast<double>(query_result) / 1000000.0 << ",";
 	total_time += static_cast<double>(query_result) / 1000000.0;
 	logging_file << total_time << ",";
-	logging_file << 1000.0 / total_time << "\n";
+	logging_file << 1000.0 / total_time << ",";
+	logging_file << counter_val << "\n";
 	logging_file.close();
 
 	glMemoryBarrier(GL_QUERY_BUFFER_BARRIER_BIT);
@@ -645,7 +648,7 @@ void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_ti
 			{
 				if(scene.lights->get_num_lights() < max_lights)
 				{
-					scene.lights->set_num_lights(scene.lights->get_num_lights() + 250);
+					scene.lights->set_num_lights(scene.lights->get_num_lights() + 1000);
 					lightcuts_size = 0;
 					tile_size = min_tile_size;
 				}

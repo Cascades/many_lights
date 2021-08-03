@@ -20,9 +20,14 @@ namespace TestApplication
 		unsigned int depth_buffer;
 		std::vector<unsigned int> attachments = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
 
+		unsigned int geometry_pass_time_query;
+		unsigned int shading_pass_time_query;
+		uint64_t query_result;
 
 		unsigned int quadVAO;
 		unsigned int quadVBO;
+
+		GLuint counter_val;
 
 		int32_t render_mode = 0;
 
@@ -51,7 +56,7 @@ namespace TestApplication
 				sizeof(GLuint),
 				GL_MAP_READ_BIT
 			);
-			GLuint counter_val = *userCounters;
+			counter_val = *userCounters;
 			glUnmapNamedBuffer(lighting_comp_atomic);
 
 			userCounters = (GLuint*)glMapNamedBufferRange(lighting_comp_atomic,
@@ -70,6 +75,14 @@ namespace TestApplication
 	template<size_t max_lights>
 	void Deferred<max_lights>::init(int const& width, int const& height, ml::Scene<max_lights> const& scene)
 	{
+		std::ofstream logging_file;
+		logging_file.open("deferred_log.csv");
+		logging_file << "Number of Lights, Geo Pass Time (ms), Shading Pass Time (ms), Total Time (ms), Possible FPS, Light Computations\n";
+		logging_file.close();
+
+		glGenQueries(1, &geometry_pass_time_query);
+		glGenQueries(1, &shading_pass_time_query);
+		
 		geometry_pass_shader = std::move(ml::Shader("../assets/shaders/geometry_pass.vert",
 			"../assets/shaders/geometry_pass.frag"));
 		light_pass_shader = std::move(ml::Shader("../assets/shaders/light_pass.vert",
@@ -201,10 +214,12 @@ namespace TestApplication
 		geometry_pass_shader.set_mat_4x4_floatv("view", 1, GL_FALSE, glm::value_ptr(scene.camera->GetViewMatrix()));
 		geometry_pass_shader.set_mat_4x4_floatv("projection", 1, GL_FALSE, glm::value_ptr(scene.camera->projection_matrix));
 
+		glBeginQuery(GL_TIME_ELAPSED, geometry_pass_time_query);
 		for (auto& model : scene.models->get_models())
 		{
 			model.draw(geometry_pass_shader);
 		}
+		glEndQuery(GL_TIME_ELAPSED);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -232,7 +247,25 @@ namespace TestApplication
 		glBindTexture(GL_TEXTURE_2D, g_ambient);
 
 		glBindVertexArray(quadVAO);
+		glBeginQuery(GL_TIME_ELAPSED, shading_pass_time_query);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		glEndQuery(GL_TIME_ELAPSED);
 		glBindVertexArray(0);
+
+		double total_time = 0.0;
+
+		std::ofstream logging_file;
+		logging_file.open("deferred_log.csv", std::ios::app);
+		logging_file << scene.lights->get_num_lights() << ",";
+		glGetQueryObjectui64v(geometry_pass_time_query, GL_QUERY_RESULT, &query_result);
+		logging_file << static_cast<double>(query_result) / 1000000.0 << ",";
+		total_time += static_cast<double>(query_result) / 1000000.0;
+		glGetQueryObjectui64v(shading_pass_time_query, GL_QUERY_RESULT, &query_result);
+		logging_file << static_cast<double>(query_result) / 1000000.0 << ",";
+		total_time += static_cast<double>(query_result) / 1000000.0;
+		logging_file << total_time << ",";
+		logging_file << 1000.0 / total_time << ",";
+		logging_file << counter_val << "\n";
+		logging_file.close();
 	}
 }

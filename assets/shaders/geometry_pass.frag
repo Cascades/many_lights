@@ -1,11 +1,12 @@
 #version 460 core
-layout (location = 0) out vec3 gPosition;
-layout (location = 1) out vec3 gNormal;
+layout (location = 0) out vec4 gPosition;
+layout (location = 1) out vec4 gNormal;
 layout (location = 2) out vec4 gDiffSpec;
-layout (location = 3) out vec3 gAmbient;
+layout (location = 3) out vec4 gAmbient;
 
 in vec2 TexCoords;
 in vec3 FragPos;
+in vec3 Color;
 in vec3 Normal;
 
 uniform sampler2D texture_ambient1;
@@ -23,7 +24,8 @@ void main()
     }
 
     // store the fragment position vector in the first gbuffer texture
-    gPosition = FragPos;
+    gPosition.rgb = FragPos.rgb;
+    gPosition.a = Color.r;
 
     vec2 offset = vec2(1.0) / sampler_size * 25;
 
@@ -54,7 +56,8 @@ void main()
     // Do the math
     norm = 2.0 * dot(u, norm) * u + (s*s - dot(u, u)) * norm + 2.0 * s * cross(u, norm);
     // also store the per-fragment normals into the gbuffer
-    gNormal = normalize(norm);
+    gNormal.rgb = normalize(norm);
+    gNormal.a = Color.g;
 
     // and the diffuse per-fragment color
     gDiffSpec.rgb = texture(texture_diffuse1, TexCoords).rgb;
@@ -62,4 +65,5 @@ void main()
     gDiffSpec.a = texture(texture_specular1, TexCoords).r;
 
     gAmbient.rgb = texture(texture_ambient1, TexCoords).rgb;
+    gAmbient.a = Color.b;
 }

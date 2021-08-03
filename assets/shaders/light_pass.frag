@@ -62,6 +62,10 @@ void main()
     }
     else if(render_mode == 5)
     {
+        vec3 initial_col;
+        initial_col.r = texture(g_position, TexCoords).a;
+        initial_col.g = texture(g_normal, TexCoords).a;
+        initial_col.b = texture(g_ambient, TexCoords).a;
         float ambientStrength = 0.1;
     
         vec3 FragPos = texture(g_position, TexCoords).rgb;
@@ -106,6 +110,8 @@ void main()
 
             result += attenuation * (ambient + diffuse + specular);
         }
+
+        result *= initial_col;
     }
 
     FragColor = vec4(result, 1.0);

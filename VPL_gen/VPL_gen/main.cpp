@@ -10,10 +10,11 @@
 
 int main()
 {
-    constexpr size_t max_lights = 1000;
+	std::cout << "hello" << std::endl;
+    constexpr size_t max_lights = 10000;
 
     std::unique_ptr<ml::ManyLights<max_lights>> many_lights = std::make_unique<ml::ManyLights<max_lights>>();
-    many_lights->add_model("../assets/sponza/sponza.obj");
+    many_lights->add_model("../assets/conference/conference.obj");
     many_lights->set_lights(20, 3.0f);
 
 	std::cout << "started" << std::endl;
@@ -77,7 +78,10 @@ int main()
 
 	std::vector<float> points;
 
-	glm::vec3 org = glm::vec3(0.0f, 500.0f, 0.0f);
+	//glm::vec3 start_pos = glm::vec3(400.0f, -1000.0f, 0.0f);
+	glm::vec3 start_pos = glm::vec3(0.0f, 500.0f, 0.0f);
+
+	glm::vec3 org = start_pos;
 
 	glm::vec3 org_value = glm::vec3(5.0f);
 
@@ -89,11 +93,11 @@ int main()
 	points.push_back(org_value.g);
 	points.push_back(org_value.b);
 	
-	while (points.size() < 6 * 20000)
+	while (points.size() < 6 * 10000)
 	{
-		org = glm::vec3(0.0f, 500.0f, 0.0f);
+		org = start_pos;
 
-		org_value = glm::vec3(2.5f);
+		org_value = glm::vec3(1.0f);
 		
 		nanort::Ray<float> ray;
 		ray.min_t = 0.0f;
@@ -112,10 +116,12 @@ int main()
 		nanort::TriangleIntersection<> isect{};
 
 		size_t bounces = 0;
-		size_t max_bounces = 3;
+		size_t max_bounces = 10;
+		uint32_t attempts = 0;
 		
-		while (bounces < max_bounces)
+		while (bounces < max_bounces && attempts < 50)
 		{
+			attempts++;
 
 			bool hit = accel.Traverse(ray, triangle_intersecter, &isect, trace_options);
 
@@ -124,7 +130,7 @@ int main()
 			if (hit) {
 				float new_t = isect.t * 0.999999999999f;
 
-				float atten = 1.0f / 2.0f;//(1.0f / (new_t * new_t));// *(glm::dot(org_value, glm::vec3(1.0)) / 3.0f);
+				float atten = 0.75f;//(1.0f / (new_t * new_t));// *(glm::dot(org_value, glm::vec3(1.0)) / 3.0f);
 
 				auto& curr_mesh = many_lights->models->models[indices_sizes[3 * isect.prim_id + 0].first].meshes[indices_sizes[3 * isect.prim_id + 0].second];
 				
@@ -167,6 +173,18 @@ int main()
 
 				float_col = (glm::vec3(col_r, col_g, col_b) / 255.0f) * org_value;
 
+				auto const& vert_0_index = original_vertex_index[indices[3 * isect.prim_id + 0]];
+				auto const& vert_1_index = original_vertex_index[indices[3 * isect.prim_id + 1]];
+				auto const& vert_2_index = original_vertex_index[indices[3 * isect.prim_id + 2]];
+
+				auto const& vert_0_color = curr_mesh.vertices[vert_0_index].color;
+				auto const& vert_1_color = curr_mesh.vertices[vert_1_index].color;
+				auto const& vert_2_color = curr_mesh.vertices[vert_2_index].color;
+
+				glm::vec3 col_avg = (vert_0_color + vert_1_color + vert_2_color) / 3.0f;
+
+				float_col *= col_avg;
+
 				points.push_back(atten * float_col.r * 2.0f);
 				points.push_back(atten * float_col.g * 2.0f);
 				points.push_back(atten * float_col.b * 2.0f);
@@ -176,10 +194,6 @@ int main()
 				ray.org[0] = org[0];
 				ray.org[1] = org[1];
 				ray.org[2] = org[2];
-				
-				auto const& vert_0_index = original_vertex_index[indices[3 * isect.prim_id + 0]];
-				auto const& vert_1_index = original_vertex_index[indices[3 * isect.prim_id + 1]];
-				auto const& vert_2_index = original_vertex_index[indices[3 * isect.prim_id + 2]];
 
 				auto const& vert_0_normal = curr_mesh.vertices[vert_0_index].normal;
 				auto const& vert_1_normal = curr_mesh.vertices[vert_1_index].normal;

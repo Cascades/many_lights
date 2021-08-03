@@ -30,11 +30,11 @@ struct PBTNode
 
     PBTNode<SpaceT, LightT> operator+(PBTNode<SpaceT, LightT> const& right)
     {
-    	if(right.total_intensity == glm::vec4(0.0))
+    	if(right.total_intensity.x == 0.0f)
     	{
             return *this;
     	}
-        if (this->total_intensity == glm::vec4(0.0))
+        if (this->total_intensity.x == 0.0f)
     	{
             return right;
     	}
@@ -181,16 +181,36 @@ private:
     // assign true values to internal nodes of tree
     void construct_parent_nodes()
     {
-        // for each level of the tree (bottom to top)
-        for (size_t log_level = num_leaves - 1; log_level > 0; log_level /= 2)
+
+        for (uint32_t internal_level = static_cast<uint32_t>(std::log2(static_cast<float>(max_lights * 2 - 1))); internal_level > 0; --internal_level)
         {
-            // iterate left to right summing child nodes
-            for (size_t current_child = 0; current_child < log_level; current_child += 2)
+            uint32_t actual_level = internal_level - 1;
+
+            const uint32_t level_size = 1u << (actual_level);
+
+            std::cout << actual_level << " " << level_size << std::endl;
+
+            for (size_t level_index = 0; level_index < level_size; level_index++)
             {
-                // could be made parallel safe, btu that would be an extension
-                data[(log_level + current_child) / 2] = data[log_level + current_child] + data[log_level + current_child + 1];
+                size_t curr_node = (level_size - 1) + level_index;
+
+                size_t left_leaf_node = get_first_child_index(curr_node);
+                size_t right_leaf_node = get_first_child_index(curr_node) + 1;
+
+                data[curr_node] = data[left_leaf_node] + data[right_leaf_node];
             }
         }
+    	
+        // for each level of the tree (bottom to top)
+        //for (size_t log_level = num_leaves - 1; log_level > 0; log_level /= 2)
+        //{
+            // iterate left to right summing child nodes
+            //for (size_t current_child = 0; current_child < log_level; current_child += 2)
+            //{
+                // could be made parallel safe, btu that would be an extension
+                //data[(log_level + current_child) / 2] = data[log_level + current_child] + data[log_level + current_child + 1];
+            //}
+        //}
         //std::cout << "fin" << std::endl;
     }
 
@@ -238,6 +258,11 @@ private:
                 lights.data()[morton_index_code[light_index].first].color.g +
                 lights.data()[morton_index_code[light_index].first].color.b;
             data[num_leaves - 1 + light_index].original_index.r = morton_index_code[light_index].first;
+        }
+
+        for (size_t light_index = lights.get_num_lights(); light_index < num_leaves; ++light_index)
+        {
+            data[num_leaves - 1 + light_index].total_intensity.x = 0;
         }
 
         // TODO: remove/refactor

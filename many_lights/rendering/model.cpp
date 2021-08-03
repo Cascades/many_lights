@@ -80,7 +80,23 @@ ml::Mesh ml::Model::process_mesh(aiMesh* mesh, const aiScene* scene)
     for (unsigned int i = 0; i < mesh->mNumVertices; i++)
     {
         ml::Vertex vertex{};
+    	
+        aiColor4D diffuse;
+        aiString name_0;
+        scene->mMaterials[mesh->mMaterialIndex]->Get(AI_MATKEY_NAME, name_0);
+        scene->mMaterials[mesh->mMaterialIndex]->Get(AI_MATKEY_COLOR_DIFFUSE, diffuse);
 
+        if (strcmp(name_0.C_Str(), "None") == 0)
+        {
+            vertex.color = glm::vec3(1.0f);
+        }
+        else
+        {
+            vertex.color.r = diffuse.r;
+            vertex.color.g = diffuse.g;
+            vertex.color.b = diffuse.b;
+        }
+    	
         glm::vec3 vector;
         vector.x = mesh->mVertices[i].x;
         vector.y = mesh->mVertices[i].y;

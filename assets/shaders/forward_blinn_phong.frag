@@ -3,6 +3,7 @@ out vec4 FragColor;
 
 in vec3 Normal;  
 in vec3 FragPos;
+in vec3 Color;
 in vec2 TexCoords;
   
 uniform vec3 viewPos; 
@@ -117,5 +118,5 @@ void main()
         result += step(0.0001, out_col) * out_col;
     }
 
-    FragColor = vec4(result, 1.0);
+    FragColor = vec4(result * Color, 1.0);
 } 

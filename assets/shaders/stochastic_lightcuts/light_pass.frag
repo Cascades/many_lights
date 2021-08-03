@@ -1,7 +1,6 @@
 #version 460 core
 
-#define MAX_LIGHTS 200
-#define MAX_LIGHTCUT_SIZE 400
+#define MAX_LIGHTCUT_SIZE 30
 
 out vec4 FragColor;
 
@@ -218,6 +217,22 @@ int sample_node(in int node_index, inout int seed, in vec3 shading_pos, in vec3 
 
         const float dead_node_value = 0.0;
 
+        if (input_ssbo.pbt[left_child_index].total_intensity.x + input_ssbo.pbt[right_child_index].total_intensity.x == dead_node_value)
+        {
+            break;
+        }
+
+        if(input_ssbo.pbt[left_child_index].total_intensity.x == dead_node_value)
+        {
+            current_index = right_child_index;
+            continue;
+        }
+        else if(input_ssbo.pbt[right_child_index].total_intensity.x == dead_node_value)
+        {
+            current_index = left_child_index;
+            continue;
+        }
+
         float ref_bound_and_intense_l = reflectance_bound(left_child_index, shading_pos, shading_ambient, shading_diffuse, shading_specular, shading_normal) * intensity(left_child_index);
         float ref_bound_and_intense_r = reflectance_bound(right_child_index, shading_pos, shading_ambient, shading_diffuse, shading_specular, shading_normal) * intensity(right_child_index);
 
@@ -298,6 +313,11 @@ void main()
     uint seed = uint(screen_coord.x) + uint(misc_vars.screen_size.x*screen_coord.y) + (misc_vars.screen_size.x*misc_vars.screen_size.y)*uint(misc_vars.iFrame);
 
     ivec2 grid_coord = ivec2(screen_coord / float(misc_vars.tile_size));
+
+    vec3 initial_col;
+    initial_col.r = texture(g_position, TexCoords).a;
+    initial_col.g = texture(g_normal, TexCoords).a;
+    initial_col.b = texture(g_ambient, TexCoords).a;
 
     //int final_light_indices[MAX_LIGHTCUT_SIZE];
 
@@ -380,5 +400,5 @@ void main()
         result.r = 1.0;
     }*/
 
-    FragColor = vec4(result, 1.0);
+    FragColor = vec4(result * initial_col, 1.0);
 } 

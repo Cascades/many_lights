@@ -18,6 +18,11 @@ namespace TestApplication
 		unsigned int lighting_comp_atomic_back;
 		void* lighting_comp_atomic_map;
 
+		GLuint counter_val;
+
+		unsigned int pass_time_query;
+		uint64_t query_result;
+
 	public:
 		ForwardBlinnPhong() = default;
 		
@@ -49,7 +54,7 @@ namespace TestApplication
 				sizeof(GLuint),
 				GL_MAP_READ_BIT
 			);
-			GLuint counter_val = *userCounters;
+			counter_val = *userCounters;
 			glUnmapNamedBuffer(lighting_comp_atomic);
 
 			userCounters = (GLuint*)glMapNamedBufferRange(lighting_comp_atomic,
@@ -80,6 +85,13 @@ namespace TestApplication
 	template<size_t max_lights>
 	void ForwardBlinnPhong<max_lights>::init(int const& width, int const& height, ml::Scene<max_lights> const& scene)
 	{
+		std::ofstream logging_file;
+		logging_file.open("forward_log.csv");
+		logging_file << "Number of Lights, Pass Time (ms), Total Time (ms), Possible FPS, Light Computations\n";
+		logging_file.close();
+
+		glGenQueries(1, &pass_time_query);
+		
 		try
 		{
 			forward_blinn_phong = ml::Shader("../assets/shaders/forward_blinn_phong.vert", "../assets/shaders/forward_blinn_phong.frag");
@@ -125,9 +137,25 @@ namespace TestApplication
 
 		forward_blinn_phong.set_floatv3("viewPos", 1, glm::value_ptr(view_position));
 
+		glBeginQuery(GL_TIME_ELAPSED, pass_time_query);
 		for (auto& model : scene.models->get_models())
 		{
 			model.draw(forward_blinn_phong);
 		}
+		glEndQuery(GL_TIME_ELAPSED);
+
+
+		double total_time = 0.0;
+
+		std::ofstream logging_file;
+		logging_file.open("forward_log.csv", std::ios::app);
+		logging_file << scene.lights->get_num_lights() << ",";
+		glGetQueryObjectui64v(pass_time_query, GL_QUERY_RESULT, &query_result);
+		logging_file << static_cast<double>(query_result) / 1000000.0 << ",";
+		total_time += static_cast<double>(query_result) / 1000000.0;
+		logging_file << total_time << ",";
+		logging_file << 1000.0 / total_time << ",";
+		logging_file << counter_val << "\n";
+		logging_file.close();
 	}
 }

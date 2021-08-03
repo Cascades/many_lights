@@ -1,6 +1,6 @@
 #version 460
 
-#define MAX_LIGHTCUT_SIZE 400
+#define MAX_LIGHTCUT_SIZE 30
 
 layout(local_size_x = 32, local_size_y = 32) in;
 uniform sampler2D g_position;
