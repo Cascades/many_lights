@@ -65,7 +65,7 @@ namespace ml
                 ImGui::PopDisabled();
             }*/
 
-            if (ImGui::SliderInt("num_lights", &int_num_lights, 0, lights.get_max_lights()))
+            /*if (ImGui::SliderInt("num_lights", &int_num_lights, 0, lights.get_max_lights()))
             {
                 num_lights_changed = true;
             	
@@ -84,6 +84,27 @@ namespace ml
                 glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * max_lights, &lights.light_colors[0], GL_STATIC_DRAW);
                 glBindBuffer(GL_ARRAY_BUFFER, 0);
                 
+            }*/
+
+            if(ImGui::InputInt("num_lights", &int_num_lights, 0, lights.get_max_lights()))
+            {
+                num_lights_changed = true;
+
+                lights.num_lights = int_num_lights;
+                lights.calculate_lighting();
+
+                lights.ubo_light_block.bind();
+                lights.ubo_light_block.buffer_sub_data(0, lights.size_bytes(), lights.data());
+                lights.ubo_light_block.unbind();
+
+                glBindBuffer(GL_ARRAY_BUFFER, lights.sphereMatrixVBO);
+                glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * max_lights, &lights.light_model_positions[0], GL_STATIC_DRAW);
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+                glBindBuffer(GL_ARRAY_BUFFER, lights.sphereColorVBO);
+                glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * max_lights, &lights.light_colors[0], GL_STATIC_DRAW);
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+
             }
 
             if(ImGui::SliderFloat("brightness_factor", &lights.light_intensity_factor, 0.0, 1.0))

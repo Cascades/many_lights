@@ -71,6 +71,8 @@ namespace TestApplication
 		unsigned int depth_buffer;
 		std::vector<unsigned int> attachments = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
 
+		std::string time_extension;
+		
 		uint32_t frame_count = 0;
 		int width = 800;
 		int height = 600;
@@ -78,7 +80,7 @@ namespace TestApplication
 		uint32_t runtime_max_lights = max_lights;
 
 		int32_t lightcuts_size;
-		int generation_type = 0;
+		int generation_type = 1;
 
 		float random_tiling = 1.0;
 		bool random_tiling_bool = false;
@@ -112,8 +114,26 @@ namespace TestApplication
 template<size_t max_lights, size_t max_lightcuts_size, int32_t max_tile_size>
 void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_tile_size>::init(int const& width, int const& height, ml::Scene<max_lights> const& scene)
 {
+	const std::time_t now = std::time(nullptr); // get the current time point
+	const std::tm calendar_time = *std::localtime(std::addressof(now));
+
+	std::cout << "              year: " << calendar_time.tm_year + 1900 << '\n'
+		<< "    month (jan==1): " << calendar_time.tm_mon + 1 << '\n'
+		<< "      day of month: " << calendar_time.tm_mday << '\n'
+		<< "hour (24-hr clock): " << calendar_time.tm_hour << '\n'
+		<< "            minute: " << calendar_time.tm_min << '\n'
+		<< "            second: " << calendar_time.tm_sec << '\n';
+
+	time_extension = std::to_string(calendar_time.tm_mday);
+	time_extension += std::string("_");
+	time_extension += std::to_string(calendar_time.tm_hour);
+	time_extension += std::string("_");
+	time_extension += std::to_string(calendar_time.tm_min);
+	time_extension += std::string("_");
+	time_extension += std::to_string(calendar_time.tm_sec);
+	
 	std::ofstream logging_file;
-	logging_file.open("stochastic_log.csv");
+	logging_file.open(std::string("stochastic_log_") + time_extension + std::string(".csv"));
 	logging_file << "Frame, Mode, Light Cut Size, Tile Size, Number of Lights, Morton Time (ms), Bitonic Time (ms), Contruction Time (ms), Geo Pass Time (ms), Cut Gen Time (ms), Shading Pass Time (ms), Total Time (ms), Possible FPS, Light Computations\n";
 	logging_file.close();
 
@@ -136,7 +156,7 @@ void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_ti
 	std::cout << "GL_MAX_COMPUTE_WORK_GROUP_SIZE: " << workGroupSizes[0] << "," << workGroupSizes[1] << "," << workGroupSizes[2] << std::endl;
 	std::cout << "GL_MAX_COMPUTE_WORK_GROUP_COUNT: " << workGroupCounts[0] << "," << workGroupCounts[1] << "," << workGroupCounts[2] << std::endl;
 	
-	lightcuts_size = 6;
+	lightcuts_size = 20;
 
 	lightcuts_array.resize(((width / min_tile_size) + 1) * ((height / min_tile_size) + 1) * max_lightcuts_size);
 	
@@ -586,7 +606,7 @@ void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_ti
 	double total_time = 0.0;
 	
 	std::ofstream logging_file;
-	logging_file.open("stochastic_log.csv", std::ios::app);
+	logging_file.open(std::string("stochastic_log_") + time_extension + std::string(".csv"), std::ios::app);
 	logging_file << iteration_counter << ",";
 	if (generation_type == 0)
 	{

@@ -11,10 +11,13 @@
 int main()
 {
 	std::cout << "hello" << std::endl;
-    constexpr size_t max_lights = 10000;
+    constexpr size_t max_lights = 50000;
 
     std::unique_ptr<ml::ManyLights<max_lights>> many_lights = std::make_unique<ml::ManyLights<max_lights>>();
-    many_lights->add_model("../assets/conference/conference.obj");
+
+	std::string input_model = std::string("../assets/sponza/sponza.obj");
+	
+    many_lights->add_model(input_model);
     many_lights->set_lights(20, 3.0f);
 
 	std::cout << "started" << std::endl;
@@ -78,26 +81,79 @@ int main()
 
 	std::vector<float> points;
 
-	//glm::vec3 start_pos = glm::vec3(400.0f, -1000.0f, 0.0f);
-	glm::vec3 start_pos = glm::vec3(0.0f, 500.0f, 0.0f);
+	std::vector<glm::vec3> start_poses;
+	std::vector<glm::vec3> start_vals;
 
-	glm::vec3 org = start_pos;
+	if (input_model == "../assets/sibenik/sibenik_medium.obj")
+	{
+		start_poses.push_back(glm::vec3(885.0f, 200.0f, 0.0f));
+		start_poses.push_back(glm::vec3(-600.0f, -600.0f, 0.0f));
+	}
+	else if (input_model == "../assets/conference/conference.obj")
+	{
+		start_poses.push_back(glm::vec3(0.0f, 500.0f, 0.0f));
+		start_poses.push_back(glm::vec3(500.0f, 500.0f, 0.0f));
+		start_poses.push_back(glm::vec3(1000.0f, 500.0f, 0.0f));
+	}
+	else if (input_model == "../assets/sponza/sponza.obj")
+	{
+		start_poses.push_back(glm::vec3(0.0f, 500.0f, 0.0f));
+	}
 
-	glm::vec3 org_value = glm::vec3(5.0f);
+	glm::vec3 org = start_poses[0];
 
-	points.push_back(org.x);
-	points.push_back(org.y);
-	points.push_back(org.z);
+	if (input_model == "../assets/sibenik/sibenik_medium.obj")
+	{
+		start_vals.push_back(glm::vec3(3.0f));
+		start_vals.push_back(glm::vec3(3.0f));
+	}
+	else if (input_model == "../assets/conference/conference.obj")
+	{
+		start_vals.push_back(glm::vec3(1.2f));
+		start_vals.push_back(glm::vec3(1.2f));
+		start_vals.push_back(glm::vec3(1.2f));
+	}
+	else if (input_model == "../assets/sponza/sponza.obj")
+	{
+		start_vals.push_back(glm::vec3(5.0f));
+	}
 
-	points.push_back(org_value.r);
-	points.push_back(org_value.g);
-	points.push_back(org_value.b);
+	glm::vec3 org_value = start_vals[0];
+
+	for (size_t curr_val_in = 0; curr_val_in < start_poses.size(); curr_val_in++)
+	{
+		points.push_back(start_poses[curr_val_in].x);
+		points.push_back(start_poses[curr_val_in].y);
+		points.push_back(start_poses[curr_val_in].z);
+
+		points.push_back(start_vals[curr_val_in].r);
+		points.push_back(start_vals[curr_val_in].g);
+		points.push_back(start_vals[curr_val_in].b);
+	}
+
+	float atten_multiplier;
+
+	if (input_model == "../assets/conference/conference.obj")
+	{
+		atten_multiplier = 20000.0f;
+	}
+	else if (input_model == "../assets/sibenik/sibenik_medium.obj")
+	{
+		atten_multiplier = 50000.0f;
+	}
+	else if (input_model == "../assets/sponza/sponza.obj")
+	{
+		atten_multiplier = 20000.0f;
+	}
+	
+
+	size_t curr_index = 0;
 	
 	while (points.size() < 6 * 10000)
 	{
-		org = start_pos;
+		org = start_poses[curr_index];
 
-		org_value = glm::vec3(1.0f);
+		org_value = start_vals[curr_index];
 		
 		nanort::Ray<float> ray;
 		ray.min_t = 0.0f;
@@ -116,8 +172,21 @@ int main()
 		nanort::TriangleIntersection<> isect{};
 
 		size_t bounces = 0;
-		size_t max_bounces = 10;
+		size_t max_bounces;
 		uint32_t attempts = 0;
+
+		if (input_model == "../assets/conference/conference.obj")
+		{
+			max_bounces = 3;
+		}
+		else if (input_model == "../assets/sibenik/sibenik_medium.obj")
+		{
+			max_bounces = 30;
+		}
+		else if (input_model == "../assets/sponza/sponza.obj")
+		{
+			max_bounces = 3;
+		}
 		
 		while (bounces < max_bounces && attempts < 50)
 		{
@@ -130,7 +199,10 @@ int main()
 			if (hit) {
 				float new_t = isect.t * 0.999999999999f;
 
-				float atten = 0.75f;//(1.0f / (new_t * new_t));// *(glm::dot(org_value, glm::vec3(1.0)) / 3.0f);
+				//std::cout << new_t << " " << (new_t * new_t) << " " << 3.0f / (new_t * new_t) << std::endl;
+
+				float atten = glm::min(atten_multiplier / (new_t * new_t), 0.7f);//(1.0f / (new_t * new_t));// *(glm::dot(org_value, glm::vec3(1.0)) / 3.0f);
+				//float atten = 1.0f;
 
 				auto& curr_mesh = many_lights->models->models[indices_sizes[3 * isect.prim_id + 0].first].meshes[indices_sizes[3 * isect.prim_id + 0].second];
 				
@@ -157,10 +229,6 @@ int main()
 					org_value *= 4.0f;
 				}*/
 
-				points.push_back((org + new_t * dir).x);
-				points.push_back((org + new_t * dir).y);
-				points.push_back((org + new_t * dir).z);
-
 				glm::uvec2 pixel_coords = curr_tex.size * glm::vec2(isect.u, isect.v);
 
 				uint32_t base_index = (pixel_coords.y * curr_tex.size.x + pixel_coords.x) * curr_tex.channels;
@@ -184,6 +252,14 @@ int main()
 				glm::vec3 col_avg = (vert_0_color + vert_1_color + vert_2_color) / 3.0f;
 
 				float_col *= col_avg;
+
+				if ((glm::dot(atten * float_col * 2.0f, glm::vec3(1.0f)) / 3.0f) < 0.1f)
+				{
+					break;
+				}
+				points.push_back((org + new_t * dir).x);
+				points.push_back((org + new_t * dir).y);
+				points.push_back((org + new_t * dir).z);
 
 				points.push_back(atten * float_col.r * 2.0f);
 				points.push_back(atten * float_col.g * 2.0f);
@@ -248,6 +324,8 @@ int main()
 				}
 			}
 		}
+
+		curr_index = (curr_index + 1) % start_poses.size();
 	}
 
 	std::ofstream outFile("my_file.txt");

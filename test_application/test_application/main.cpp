@@ -8,16 +8,16 @@
 
 int main()
 {
-    constexpr size_t max_lights = 10000;
+    constexpr size_t max_lights = 16000;
 	
     std::unique_ptr<ml::ManyLights<max_lights>> many_lights = std::make_unique<ml::ManyLights<max_lights>>();
-    many_lights->add_model("../assets/conference/conference.obj");
+    many_lights->add_model("../assets/sponza/sponza.obj");
     many_lights->set_lights(max_lights, 3.0f);
 
     many_lights->add_algorithm<TestApplication::VPLDebug<max_lights>>();
     many_lights->add_algorithm<TestApplication::Deferred<max_lights>>();
     many_lights->add_algorithm<TestApplication::ForwardBlinnPhong<max_lights>>();
-    many_lights->add_algorithm<TestApplication::StochasticLightcuts<max_lights, 100, 32>>();
+    many_lights->add_algorithm<TestApplication::StochasticLightcuts<max_lights, 30, 32>>();
 
     many_lights->run();
 	
