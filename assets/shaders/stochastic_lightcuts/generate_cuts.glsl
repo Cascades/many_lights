@@ -174,11 +174,27 @@ float geo_term(in int pbt_light_index, in vec3 shading_pos, in vec3 shading_norm
 	//return dist_vec;
 
 	//taken from DQLin
-	float nrm_max = max_dist_along(shading_pos, shading_normal, input_ssbo.pbt[pbt_light_index].bb.min_bounds.xyz, input_ssbo.pbt[pbt_light_index].bb.max_bounds.xyz);
-	vec3 d = min(max(shading_pos, input_ssbo.pbt[pbt_light_index].bb.min_bounds.xyz), input_ssbo.pbt[pbt_light_index].bb.max_bounds.xyz) - shading_pos;
+	/*float nrm_max = max_dist_along(shading_pos, shading_normal, input_ssbo.pbt[pbt_light_index].bb.min_bounds.xyz, input_ssbo.pbt[pbt_light_index].bb.max_bounds.xyz);
+	vec3 d = clamp(shading_pos, input_ssbo.pbt[pbt_light_index].bb.min_bounds.xyz, input_ssbo.pbt[pbt_light_index].bb.max_bounds.xyz) - shading_pos;
 	vec3 tng = d - dot(d, shading_normal) * shading_normal;
 	float hyp2 = dot(tng, tng) + nrm_max * nrm_max;
-	return step(0.0, nrm_max) * nrm_max * inversesqrt(hyp2);
+	return step(0.0001, nrm_max) * nrm_max * inversesqrt(hyp2);*/
+
+	float min_dist = 10000000.0;
+
+	/*min_dist = min(min_dist, distance(shading_pos, vec3(input_ssbo.pbt[pbt_light_index].bb.min_bounds.x, input_ssbo.pbt[pbt_light_index].bb.min_bounds.y, input_ssbo.pbt[pbt_light_index].bb.min_bounds.z)));
+	min_dist = min(min_dist, distance(shading_pos, vec3(input_ssbo.pbt[pbt_light_index].bb.min_bounds.x, input_ssbo.pbt[pbt_light_index].bb.min_bounds.y, input_ssbo.pbt[pbt_light_index].bb.max_bounds.z)));
+	min_dist = min(min_dist, distance(shading_pos, vec3(input_ssbo.pbt[pbt_light_index].bb.min_bounds.x, input_ssbo.pbt[pbt_light_index].bb.max_bounds.y, input_ssbo.pbt[pbt_light_index].bb.min_bounds.z)));
+	min_dist = min(min_dist, distance(shading_pos, vec3(input_ssbo.pbt[pbt_light_index].bb.min_bounds.x, input_ssbo.pbt[pbt_light_index].bb.max_bounds.y, input_ssbo.pbt[pbt_light_index].bb.max_bounds.z)));
+	min_dist = min(min_dist, distance(shading_pos, vec3(input_ssbo.pbt[pbt_light_index].bb.min_bounds.x, input_ssbo.pbt[pbt_light_index].bb.min_bounds.y, input_ssbo.pbt[pbt_light_index].bb.min_bounds.z)));
+	min_dist = min(min_dist, distance(shading_pos, vec3(input_ssbo.pbt[pbt_light_index].bb.min_bounds.x, input_ssbo.pbt[pbt_light_index].bb.min_bounds.y, input_ssbo.pbt[pbt_light_index].bb.max_bounds.z)));
+	min_dist = min(min_dist, distance(shading_pos, vec3(input_ssbo.pbt[pbt_light_index].bb.min_bounds.x, input_ssbo.pbt[pbt_light_index].bb.max_bounds.y, input_ssbo.pbt[pbt_light_index].bb.min_bounds.z)));
+	min_dist = min(min_dist, distance(shading_pos, vec3(input_ssbo.pbt[pbt_light_index].bb.min_bounds.x, input_ssbo.pbt[pbt_light_index].bb.max_bounds.y, input_ssbo.pbt[pbt_light_index].bb.max_bounds.z)));*/
+
+	min_dist = distance(clamp(shading_pos, input_ssbo.pbt[pbt_light_index].bb.min_bounds.xyz, input_ssbo.pbt[pbt_light_index].bb.max_bounds.xyz), shading_pos);
+	min_dist = mix(10000000.0, min_dist, step(0.0001, min_dist));
+
+	return (1.0 / (min_dist * min_dist));
 }
 
 float mat_term(in int pbt_light_index, in vec3 shading_pos, in vec3 shading_ambient, in vec3 shading_diffuse, in float shading_specular, in vec3 shading_normal)

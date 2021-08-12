@@ -10,13 +10,14 @@
 
 int main()
 {
-	std::cout << "hello" << std::endl;
-    constexpr size_t max_lights = 50000;
+	std::cout << "hello2" << std::endl;
+	constexpr size_t max_lights = 99000;
 
     std::unique_ptr<ml::ManyLights<max_lights>> many_lights = std::make_unique<ml::ManyLights<max_lights>>();
 
 	std::string input_model = std::string("../assets/sponza/sponza.obj");
-	
+
+	std::cout << "Loading: " << input_model << std::endl;
     many_lights->add_model(input_model);
     many_lights->set_lights(20, 3.0f);
 
@@ -118,6 +119,9 @@ int main()
 		start_vals.push_back(glm::vec3(5.0f));
 	}
 
+	//start_vals.clear();
+	//start_vals.push_back(glm::vec3(1.0f));
+
 	glm::vec3 org_value = start_vals[0];
 
 	for (size_t curr_val_in = 0; curr_val_in < start_poses.size(); curr_val_in++)
@@ -143,13 +147,12 @@ int main()
 	}
 	else if (input_model == "../assets/sponza/sponza.obj")
 	{
-		atten_multiplier = 20000.0f;
+		atten_multiplier = 10000.0f;
 	}
 	
-
 	size_t curr_index = 0;
 	
-	while (points.size() < 6 * 10000)
+	while (points.size() < 6 * max_lights)
 	{
 		org = start_poses[curr_index];
 

@@ -49,6 +49,7 @@ void ml::Model::load_model(std::filesystem::path path)
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode || !path.has_parent_path())
     {
+        std::cout << std::string("Error loading assimp: ") + std::string(importer.GetErrorString()) << std::endl;
         throw std::string("Error loading assimp: ") + std::string(importer.GetErrorString());
     }
 

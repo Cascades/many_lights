@@ -130,7 +130,7 @@ namespace ml
     {
        // glEnable(GL_DEBUG_OUTPUT);
        // glDebugMessageCallback(MessageCallback, 0);
-        window.setup_viewport(800, 600);
+        window.setup_viewport(window.get_width(), window.get_height());
     }
 
 	// add a model to the the scene

@@ -88,6 +88,10 @@ void main()
         float a = 0.001;
         float b = 0.0001;
 
+        vec3 tex_ambient = texture(g_ambient, TexCoords).rgb;
+        vec3 tex_diffuse = texture(g_diff_spec, TexCoords).rgb;
+        vec3 tex_specular = vec3(texture(g_diff_spec, TexCoords).a);
+
         for(int light_index = 0; light_index < num_lights; ++light_index)
         {
             atomicCounterIncrement(lighting_comps);
@@ -96,17 +100,17 @@ void main()
             attenuation = 1.0 / (1.0 + a*dist + b*dist*dist);
 
             // ambient0
-            ambient = ambientStrength * lights.lights[light_index].color.rgb * texture(g_ambient, TexCoords).rgb;
+            ambient = ambientStrength * lights.lights[light_index].color.rgb * tex_ambient;
   	
             // diffuse0
             lightDir = normalize(lights.lights[light_index].position.xyz - FragPos);
             diff = max(dot(norm, lightDir), 0.0);
-            diffuse = diff * lights.lights[light_index].color.rgb * texture(g_diff_spec, TexCoords).rgb;
+            diffuse = diff * lights.lights[light_index].color.rgb * tex_diffuse;
     
             // specular0
             reflectDir = reflect(-lightDir, norm);  
             spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
-            specular = specularStrength * spec * lights.lights[light_index].color.rgb * vec3(texture(g_diff_spec, TexCoords).a);
+            specular = specularStrength * spec * lights.lights[light_index].color.rgb * tex_specular;
 
             result += attenuation * (ambient + diffuse + specular);
         }

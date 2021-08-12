@@ -11,14 +11,14 @@ namespace ml
 	class Window
 	{
 		GLFWwindow* window;
-		int width = 800;
-		int height = 600;
+		int width = 1280;
+		int height = 720;
 
 		bool first_mouse = true;
 		float last_x = width / 2.0f;
 		float last_y = height / 2.0f;
 
-		bool in_imgui = false;
+		bool in_imgui = true;
 
 		std::shared_ptr<ml::Camera> camera;
 

@@ -74,8 +74,8 @@ namespace TestApplication
 		std::string time_extension;
 		
 		uint32_t frame_count = 0;
-		int width = 800;
-		int height = 600;
+		int width = 1280;
+		int height = 720;
 
 		uint32_t runtime_max_lights = max_lights;
 
@@ -451,6 +451,8 @@ void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_ti
 		perfect_balanced_tree.regenerate(*scene.lights);
 		//perfect_balanced_tree.print();
 		glNamedBufferSubData(lights_ssbo, 0, perfect_balanced_tree.size_bytes(), perfect_balanced_tree.get_data());
+
+		glMemoryBarrier(GL_ALL_BARRIER_BITS);
 	}
 	else
 	{
@@ -458,7 +460,7 @@ void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_ti
 		
 		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 		
-		morton_code_shader.use(); // Compute shader program.
+	    morton_code_shader.use(); // Compute shader program.
 		glBeginQuery(GL_TIME_ELAPSED, morton_time_query);
 		glDispatchCompute((std::bit_ceil(scene.lights->get_max_lights()) / 128) + 1, 1, 1);
 		glEndQuery(GL_TIME_ELAPSED);

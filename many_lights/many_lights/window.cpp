@@ -17,8 +17,9 @@ ml::Window::Window(std::shared_ptr<ml::Camera> camera)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+    glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
 
-    window = glfwCreateWindow(800, 600, "MSc Project | George Tattersall | Many Lights", NULL, NULL);
+    window = glfwCreateWindow(width, height, "MSc Project | George Tattersall | Many Lights", NULL, NULL);
     if (window == nullptr)
     {
         glfwTerminate();
@@ -31,7 +32,7 @@ ml::Window::Window(std::shared_ptr<ml::Camera> camera)
     glfwSetWindowUserPointer(window, reinterpret_cast<void*>(this));
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     ml::initalise_glad();
 }
