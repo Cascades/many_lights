@@ -11,8 +11,8 @@ namespace ml
 	class Window
 	{
 		GLFWwindow* window;
-		int width = 1280;
-		int height = 720;
+		int width = 1920;
+		int height = 1080;
 
 		bool first_mouse = true;
 		float last_x = width / 2.0f;

@@ -74,8 +74,8 @@ namespace TestApplication
 		std::string time_extension;
 		
 		uint32_t frame_count = 0;
-		int width = 1280;
-		int height = 720;
+		int width = 1920;
+		int height = 1080;
 
 		uint32_t runtime_max_lights = max_lights;
 
@@ -156,7 +156,7 @@ void TestApplication::StochasticLightcuts<max_lights, max_lightcuts_size, max_ti
 	std::cout << "GL_MAX_COMPUTE_WORK_GROUP_SIZE: " << workGroupSizes[0] << "," << workGroupSizes[1] << "," << workGroupSizes[2] << std::endl;
 	std::cout << "GL_MAX_COMPUTE_WORK_GROUP_COUNT: " << workGroupCounts[0] << "," << workGroupCounts[1] << "," << workGroupCounts[2] << std::endl;
 	
-	lightcuts_size = 20;
+	lightcuts_size = 10;
 
 	lightcuts_array.resize(((width / min_tile_size) + 1) * ((height / min_tile_size) + 1) * max_lightcuts_size);
 	
